@@ -10,13 +10,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Aplikasi monitoring progres kerja tim internal audit: kelola auditor, tim, penugasan project, dan lacak tahapan dari perencanaan hingga closing.",
+          "Aplikasi monitoring progres audit internal: kelola auditor, penugasan proyek, dan lacak tahapan dari perencanaan hingga closing.",
       },
       { property: "og:title", content: "AuditFlow — Monitoring Progres Audit Internal" },
       {
         property: "og:description",
         content:
-          "Kelola tim audit, penugasan project, dan progres lima tahap audit dalam satu aplikasi.",
+          "Kelola auditor, penugasan proyek, dan progres lima tahap audit dalam satu aplikasi.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -59,7 +59,7 @@ function Index() {
           Pantau progres audit tim Anda, dari perencanaan sampai closing.
         </h1>
         <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-          Kelola daftar auditor dan tim, tugaskan mereka ke project audit, dan lacak
+          Kelola daftar auditor, tugaskan satu atau beberapa orang ke proyek audit, dan lacak
           setiap tahap kerja dengan ceklist tugas serta tanggal target yang jelas.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
@@ -76,13 +76,13 @@ function Index() {
         {[
           {
             icon: Users,
-            title: "Kelola Tim & Auditor",
-            desc: "Daftarkan auditor individu dan kelompok tim dalam satu tempat.",
+            title: "Kelola Auditor",
+            desc: "Daftarkan auditor untuk setiap penugasan proyek.",
           },
           {
             icon: FolderKanban,
             title: "Penugasan Proyek",
-            desc: "Assign auditor atau tim ke project audit dengan peran masing-masing.",
+            desc: "Tugaskan satu atau beberapa auditor ke proyek audit dengan peran masing-masing.",
           },
           {
             icon: ListChecks,
