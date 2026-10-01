@@ -5,14 +5,15 @@ import { ArrowRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { STAGES, formatDate, projectProgress, type Project, type Stage } from "@/lib/audit";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/proyek/")({
   head: () => ({
     meta: [
-      { title: "Proyek Audit — AuditFlow" },
+      { title: "Project Audit — AURA" },
       { name: "description", content: "Daftar project audit dan pembuatannya." },
-      { property: "og:title", content: "Proyek Audit — AuditFlow" },
-      { property: "og:description", content: "Daftar proyek audit dan progresnya di AuditFlow." },
+      { property: "og:title", content: "Project Audit — AURA" },
+      { property: "og:description", content: "Daftar project audit dan progresnya di AURA." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -61,7 +62,7 @@ function ProyekPage() {
       if (stageError) throw stageError;
     },
     onSuccess: () => {
-      toast.success("Proyek dibuat dengan 5 tahap audit");
+      toast.success("Project dibuat dengan 5 tahap audit");
       setForm({ name: "", auditee: "", description: "", period_start: "", period_end: "" });
       setShowForm(false);
       queryClient.invalidateQueries({ queryKey: ["projects-with-stages"] });
@@ -76,17 +77,17 @@ function ProyekPage() {
     <div>
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl">Proyek Audit</h1>
+          <h1 className="font-display text-3xl md:text-4xl">Project Audit</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Daftar seluruh project audit dan progresnya.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowForm(!showForm)}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+          className="shrink-0"
         >
-          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Proyek Baru</span>
-        </button>
+          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Project Baru</span>
+        </Button>
       </div>
 
       {showForm && (
@@ -139,12 +140,11 @@ function ProyekPage() {
             className={inputCls}
             rows={2}
           />
-          <button
+          <Button
             disabled={createProject.isPending}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
           >
-            Simpan Proyek
-          </button>
+            Simpan Project
+          </Button>
         </form>
       )}
 

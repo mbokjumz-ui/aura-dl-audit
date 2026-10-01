@@ -6,17 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AuditFlow — Monitoring Progres Audit Internal" },
+      { title: "AURA — Audit Updates, Review & Action" },
       {
         name: "description",
         content:
-          "Aplikasi monitoring progres audit internal: kelola auditor, penugasan proyek, dan lacak tahapan dari perencanaan hingga closing.",
+          "AURA memonitor progres audit internal: kelola auditor, penugasan project, dan tahapan dari perencanaan hingga closing.",
       },
-      { property: "og:title", content: "AuditFlow — Monitoring Progres Audit Internal" },
+      { property: "og:title", content: "AURA — Audit Updates, Review & Action" },
       {
         property: "og:description",
         content:
-          "Kelola auditor, penugasan proyek, dan progres lima tahap audit dalam satu aplikasi.",
+          "Kelola auditor, penugasan project, dan progres lima tahap audit di AURA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -41,7 +41,7 @@ function Index() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <ClipboardCheck className="h-4.5 w-4.5" />
           </div>
-          <span className="font-display text-xl">AuditFlow</span>
+          <span className="font-display text-xl">AURA</span>
         </div>
         <Link
           to="/auth"
@@ -53,13 +53,13 @@ function Index() {
 
       <section className="mx-auto max-w-6xl px-4 pb-16 pt-12 md:px-8 md:pt-20">
         <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Internal Audit Monitor
+          Audit Updates, Review &amp; Action
         </p>
         <h1 className="mt-4 max-w-2xl font-display text-4xl leading-tight md:text-6xl">
           Pantau progres audit tim Anda, dari perencanaan sampai closing.
         </h1>
         <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-          Kelola daftar auditor, tugaskan satu atau beberapa orang ke proyek audit, dan lacak
+          Kelola daftar auditor, tugaskan satu atau beberapa orang ke project audit, dan lacak
           setiap tahap kerja dengan ceklist tugas serta tanggal target yang jelas.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
@@ -77,12 +77,12 @@ function Index() {
           {
             icon: Users,
             title: "Kelola Auditor",
-            desc: "Daftarkan auditor untuk setiap penugasan proyek.",
+            desc: "Daftarkan auditor untuk setiap penugasan project.",
           },
           {
             icon: FolderKanban,
-            title: "Penugasan Proyek",
-            desc: "Tugaskan satu atau beberapa auditor ke proyek audit dengan peran masing-masing.",
+            title: "Penugasan Project",
+            desc: "Tugaskan satu atau beberapa auditor ke project audit dengan peran masing-masing.",
           },
           {
             icon: ListChecks,

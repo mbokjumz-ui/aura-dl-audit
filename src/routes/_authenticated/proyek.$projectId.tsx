@@ -49,10 +49,10 @@ const allowedExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "j
 export const Route = createFileRoute("/_authenticated/proyek/$projectId")({
   head: () => ({
     meta: [
-      { title: "Detail Proyek — AuditFlow" },
+      { title: "Detail Project — AURA" },
       { name: "description", content: "Detail tahapan, ceklist tugas, dan penugasan project audit." },
-      { property: "og:title", content: "Detail Proyek — AuditFlow" },
-      { property: "og:description", content: "Detail tahapan, ceklist tugas, dan penugasan proyek audit di AuditFlow." },
+      { property: "og:title", content: "Detail Project — AURA" },
+      { property: "og:description", content: "Detail tahapan, ceklist tugas, dan penugasan project audit di AURA." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -261,13 +261,14 @@ function ProyekDetail() {
       if (error) throw error;
       if (documents.length) {
         const { error: storageError } = await supabase.storage.from("audit-documents").remove(documents.map((d) => d.file_path));
-        if (storageError) toast.warning("Proyek dihapus, tetapi sebagian berkas tidak dapat dibersihkan.");
+        if (storageError) toast.warning("Project dihapus, tetapi sebagian berkas tidak dapat dibersihkan.");
       }
     },
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ["project", projectId] });
+      queryClient.setQueriesData<{ id: string }[]>({ queryKey: ["projects-with-stages"] }, (current) => current?.filter((item) => item.id !== projectId));
       queryClient.invalidateQueries({ queryKey: ["projects-with-stages"] });
-      toast.success("Proyek dihapus");
+      toast.success("Project dihapus");
       navigate({ to: "/proyek" });
     },
     onError: (e) => toast.error(e.message),
@@ -283,7 +284,7 @@ function ProyekDetail() {
     "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
 
   if (projectError) {
-    return <div role="alert" className="text-sm text-destructive">Proyek tidak dapat dimuat. Silakan coba lagi atau kembali ke daftar proyek.</div>;
+    return <div role="alert" className="text-sm text-destructive">Project tidak dapat dimuat. Silakan coba lagi atau kembali ke daftar project.</div>;
   }
 
   if (isLoading || !project) {
@@ -299,7 +300,7 @@ function ProyekDetail() {
         to="/proyek"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Semua Proyek
+        <ArrowLeft className="h-4 w-4" /> Semua Project
       </Link>
 
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
@@ -320,19 +321,19 @@ function ProyekDetail() {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus proyek"><Trash2 /> Hapus Proyek</Button>
+              <Button variant="outline" disabled={documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus project"><Trash2 /> Hapus Project</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Hapus proyek ini?</AlertDialogTitle>
+                <AlertDialogTitle>Hapus project ini?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Proyek “{project.name}”, seluruh tahapan, tugas, penugasan, dan dokumennya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+                  Project “{project.name}”, seluruh tahapan, tugas, penugasan, dan dokumennya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
                 <AlertDialogAction disabled={deleteProject.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteProject.mutate()}>
-                  Hapus Proyek
+                  Hapus Project
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -580,7 +581,7 @@ function ProyekDetail() {
 
             <div className="mt-5 border-t border-border pt-4">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                   <UserPlus className="h-3.5 w-3.5" /> Tambah Auditor ke Proyek
+                   <UserPlus className="h-3.5 w-3.5" /> Tambah Auditor ke Project
               </p>
               <div className="space-y-2">
                  <div role="group" aria-label="Pilih auditor" className="max-h-48 space-y-1 overflow-y-auto border-y border-border py-2">

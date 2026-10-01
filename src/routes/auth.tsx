@@ -8,10 +8,10 @@ import { lovable } from "@/integrations/lovable";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Masuk — AuditFlow" },
-      { name: "description", content: "Masuk atau daftar ke AuditFlow untuk memonitor progres audit internal." },
-      { property: "og:title", content: "Masuk — AuditFlow" },
-      { property: "og:description", content: "Masuk atau daftar ke AuditFlow untuk memonitor progres audit internal." },
+      { title: "Masuk — AURA" },
+      { name: "description", content: "Masuk atau daftar ke AURA untuk memonitor progres audit internal." },
+      { property: "og:title", content: "Masuk — AURA" },
+      { property: "og:description", content: "Masuk atau daftar ke AURA untuk memonitor progres audit internal." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -82,7 +82,8 @@ function AuthPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <ClipboardCheck className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 font-display text-3xl">AuditFlow</h1>
+          <h1 className="mt-4 font-display text-3xl">AURA</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Audit Updates, Review &amp; Action</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "login" ? "Masuk ke akun Anda" : "Buat akun baru"}
           </p>

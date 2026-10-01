@@ -81,17 +81,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AuditFlow — Monitoring Progres Audit Internal" },
+      { title: "AURA — Audit Updates, Review & Action" },
       {
         name: "description",
         content:
-          "Aplikasi monitoring progres kerja tim internal audit: kelola auditor, tim, penugasan project, dan lacak tahapan dari perencanaan hingga closing.",
+          "AURA memonitor progres audit internal: kelola auditor, penugasan project, dan tahapan dari perencanaan hingga closing.",
       },
-      { property: "og:title", content: "AuditFlow — Monitoring Progres Audit Internal" },
+      { property: "og:title", content: "AURA — Audit Updates, Review & Action" },
       {
         property: "og:description",
         content:
-          "Kelola tim audit, penugasan project, dan progres lima tahap audit dalam satu aplikasi.",
+          "Kelola auditor, penugasan project, dan progres lima tahap audit di AURA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
