@@ -32,6 +32,10 @@ export const Route = createFileRoute("/_authenticated/proyek/$projectId")({
     meta: [
       { title: "Detail Proyek — AuditFlow" },
       { name: "description", content: "Detail tahapan, ceklist tugas, dan penugasan project audit." },
+      { property: "og:title", content: "Detail Proyek — AuditFlow" },
+      { property: "og:description", content: "Detail tahapan, ceklist tugas, dan penugasan proyek audit di AuditFlow." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProyekDetail,
@@ -46,7 +50,7 @@ function ProyekDetail() {
   const [assignTarget, setAssignTarget] = useState("");
   const [assignRole, setAssignRole] = useState("anggota");
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, error: projectError } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -194,6 +198,10 @@ function ProyekDetail() {
 
   const inputCls =
     "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+  if (projectError) {
+    return <div role="alert" className="text-sm text-destructive">Proyek tidak dapat dimuat. Silakan coba lagi atau kembali ke daftar proyek.</div>;
+  }
 
   if (isLoading || !project) {
     return <p className="text-sm text-muted-foreground">Memuat data…</p>;

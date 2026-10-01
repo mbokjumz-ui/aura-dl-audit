@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep `/proyek` as an index leaf beneath an Outlet-rendering parent route; the detail path is nested and otherwise cannot render.
