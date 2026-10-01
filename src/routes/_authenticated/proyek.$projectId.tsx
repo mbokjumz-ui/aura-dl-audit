@@ -105,7 +105,7 @@ function ProyekDetail() {
     },
   });
 
-  const { data: documents = [], error: documentsError } = useQuery({
+  const { data: documents = [], error: documentsError, isLoading: documentsLoading } = useQuery({
     queryKey: ["stage-documents", projectId],
     queryFn: async () => {
       const { data, error } = await supabase.from("stage_documents")
@@ -329,7 +329,7 @@ function ProyekDetail() {
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-destructive hover:text-destructive" aria-label="Hapus proyek"><Trash2 /> Hapus Proyek</Button>
+              <Button variant="outline" disabled={documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus proyek"><Trash2 /> Hapus Proyek</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
