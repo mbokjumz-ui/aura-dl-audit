@@ -67,28 +67,25 @@ export type Database = {
       }
       project_assignments: {
         Row: {
-          auditor_id: string | null
+          auditor_id: string
           created_at: string
           id: string
           project_id: string
           role: string | null
-          team_id: string | null
         }
         Insert: {
-          auditor_id?: string | null
+          auditor_id: string
           created_at?: string
           id?: string
           project_id: string
           role?: string | null
-          team_id?: string | null
         }
         Update: {
-          auditor_id?: string | null
+          auditor_id?: string
           created_at?: string
           id?: string
           project_id?: string
           role?: string | null
-          team_id?: string | null
         }
         Relationships: [
           {
@@ -103,13 +100,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_assignments_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -267,60 +257,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      team_members: {
-        Row: {
-          auditor_id: string
-          id: string
-          team_id: string
-        }
-        Insert: {
-          auditor_id: string
-          id?: string
-          team_id: string
-        }
-        Update: {
-          auditor_id?: string
-          id?: string
-          team_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_members_auditor_id_fkey"
-            columns: ["auditor_id"]
-            isOneToOne: false
-            referencedRelation: "auditors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_members_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      teams: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
       }
     }
     Views: {
