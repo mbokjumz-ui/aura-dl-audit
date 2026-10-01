@@ -1,0 +1,3 @@
+- [ ] Hilangkan pengelolaan tim dan anggota dari halaman auditor dan navigasi.
+- [ ] Ubah penugasan proyek menjadi pilihan satu atau beberapa auditor tanpa duplikasi.
+- [ ] Verifikasi halaman desktop/mobile dan hasil aplikasi.
