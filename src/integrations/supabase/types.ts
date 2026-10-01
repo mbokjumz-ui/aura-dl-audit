@@ -14,7 +14,273 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      auditors: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          position: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          position?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_assignments: {
+        Row: {
+          auditor_id: string | null
+          created_at: string
+          id: string
+          project_id: string
+          role: string | null
+          team_id: string | null
+        }
+        Insert: {
+          auditor_id?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          role?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          auditor_id?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          role?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assignments_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_stages: {
+        Row: {
+          id: string
+          project_id: string
+          sort_order: number
+          stage_key: string
+          target_date: string | null
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          sort_order?: number
+          stage_key: string
+          target_date?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          sort_order?: number
+          stage_key?: string
+          target_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          auditee: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+        }
+        Insert: {
+          auditee?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+        }
+        Update: {
+          auditee?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      stage_tasks: {
+        Row: {
+          auditor_id: string | null
+          created_at: string
+          done_at: string | null
+          due_date: string | null
+          id: string
+          is_done: boolean
+          stage_id: string
+          title: string
+        }
+        Insert: {
+          auditor_id?: string | null
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          stage_id: string
+          title: string
+        }
+        Update: {
+          auditor_id?: string | null
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_done?: boolean
+          stage_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage_tasks_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stage_tasks_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          auditor_id: string
+          id: string
+          team_id: string
+        }
+        Insert: {
+          auditor_id: string
+          id?: string
+          team_id: string
+        }
+        Update: {
+          auditor_id?: string
+          id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
