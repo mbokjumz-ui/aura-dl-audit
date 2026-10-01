@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Auditor, Team } from "@/lib/audit";
 
-export const Route = createFileRoute("/_authenticated/tim")({
+export const Route = createFileRoute("/_authenticated/auditor")({
   head: () => ({
     meta: [
       { title: "Tim & Auditor — AuditFlow" },
