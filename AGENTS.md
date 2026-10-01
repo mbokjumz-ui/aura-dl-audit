@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Keep `/proyek` as an index leaf beneath an Outlet-rendering parent route; the detail path is nested and otherwise cannot render.
+- Store Pelaporan and Closing documents in private audit-documents storage with stage_documents metadata; private access and cascade-linked records keep audit files associated with their project.

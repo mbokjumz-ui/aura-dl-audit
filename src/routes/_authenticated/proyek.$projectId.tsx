@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   Circle,
   Plus,
+  FileText,
+  Download,
+  Upload,
   Trash2,
   UserPlus,
 } from "lucide-react";
@@ -26,6 +29,23 @@ import {
   type Team,
 } from "@/lib/audit";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+type StageDocument = {
+  id: string;
+  stage_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  created_at: string;
+};
+
+const allowedExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg"];
 
 export const Route = createFileRoute("/_authenticated/proyek/$projectId")({
   head: () => ({
@@ -43,6 +63,7 @@ export const Route = createFileRoute("/_authenticated/proyek/$projectId")({
 
 function ProyekDetail() {
   const { projectId } = Route.useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [newTaskFor, setNewTaskFor] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState({ title: "", due_date: "", auditor_id: "" });
@@ -81,6 +102,18 @@ function ProyekDetail() {
         .eq("project_id", projectId);
       if (error) throw error;
       return data as Assignment[];
+    },
+  });
+
+  const { data: documents = [], error: documentsError } = useQuery({
+    queryKey: ["stage-documents", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("stage_documents")
+        .select("id, stage_id, file_name, file_path, file_size, created_at, project_stages!inner(project_id)")
+        .eq("project_stages.project_id", projectId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as StageDocument[];
     },
   });
 
@@ -196,6 +229,66 @@ function ProyekDetail() {
     onError: (e) => toast.error(e.message),
   });
 
+  const uploadDocument = useMutation({
+    mutationFn: async ({ stageId, file }: { stageId: string; file: File }) => {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      if (!extension || !allowedExtensions.includes(extension)) throw new Error("Gunakan PDF, Word, Excel, PNG, atau JPG.");
+      if (file.size === 0 || file.size > 20 * 1024 * 1024) throw new Error("Ukuran berkas harus antara 1 byte dan 20 MB.");
+      const filePath = `${projectId}/${stageId}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from("audit-documents").upload(filePath, file, { upsert: false });
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("stage_documents").insert({
+        stage_id: stageId, file_name: file.name, file_path: filePath,
+        file_size: file.size, content_type: file.type || "application/octet-stream",
+      });
+      if (error) {
+        await supabase.storage.from("audit-documents").remove([filePath]);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Dokumen diunggah");
+      queryClient.invalidateQueries({ queryKey: ["stage-documents", projectId] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeDocument = useMutation({
+    mutationFn: async (document: StageDocument) => {
+      const { error } = await supabase.from("stage_documents").delete().eq("id", document.id);
+      if (error) throw error;
+      const { error: storageError } = await supabase.storage.from("audit-documents").remove([document.file_path]);
+      if (storageError) throw new Error("Dokumen dihapus dari daftar, tetapi berkasnya tidak dapat dibersihkan.");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["stage-documents", projectId] }),
+    onError: (e) => toast.error(e.message),
+    onSuccess: () => toast.success("Dokumen dihapus"),
+  });
+
+  const deleteProject = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("projects").delete().eq("id", projectId);
+      if (error) throw error;
+      if (documents.length) {
+        const { error: storageError } = await supabase.storage.from("audit-documents").remove(documents.map((d) => d.file_path));
+        if (storageError) toast.warning("Proyek dihapus, tetapi sebagian berkas tidak dapat dibersihkan.");
+      }
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects-with-stages"] });
+      toast.success("Proyek dihapus");
+      navigate({ to: "/proyek" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const openDocument = async (document: StageDocument) => {
+    const { data, error } = await supabase.storage.from("audit-documents").createSignedUrl(document.file_path, 60, { download: document.file_name });
+    if (error) { toast.error(error.message); return; }
+    window.location.assign(data.signedUrl);
+  };
+
   const inputCls =
     "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
 
@@ -228,17 +321,32 @@ function ProyekDetail() {
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{project.description}</p>
           )}
         </div>
-        <button
-          onClick={() => toggleStatus.mutate(project.status === "selesai" ? "berjalan" : "selesai")}
-          className={cn(
-            "rounded-lg px-4 py-2 text-sm font-semibold",
-            project.status === "selesai"
-              ? "border border-input bg-background"
-              : "bg-primary text-primary-foreground",
-          )}
-        >
-          {project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant={project.status === "selesai" ? "outline" : "default"}
+            disabled={toggleStatus.isPending}
+            onClick={() => toggleStatus.mutate(project.status === "selesai" ? "berjalan" : "selesai")}>
+            {project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-destructive hover:text-destructive" aria-label="Hapus proyek"><Trash2 /> Hapus Proyek</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hapus proyek ini?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Proyek “{project.name}”, seluruh tahapan, tugas, penugasan, dan dokumennya akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction disabled={deleteProject.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteProject.mutate()}>
+                  Hapus Proyek
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <div className="mb-8 rounded-2xl border border-border bg-card p-5">
@@ -412,6 +520,40 @@ function ProyekDetail() {
                   >
                     <Plus className="h-3.5 w-3.5" /> Tambah Tugas
                   </button>
+                )}
+                {(stage.stage_key === "pelaporan" || stage.stage_key === "closing") && (
+                  <div className="mt-5 border-t border-border pt-4">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <h4 className="flex items-center gap-2 text-sm font-semibold"><FileText className="h-4 w-4" /> Dokumen</h4>
+                      <Button size="sm" variant="outline" asChild className={uploadDocument.isPending ? "pointer-events-none opacity-50" : ""}>
+                        <label className="cursor-pointer">
+                          <Upload className="h-4 w-4" /> {uploadDocument.isPending && uploadDocument.variables?.stageId === stage.id ? "Mengunggah…" : "Unggah Dokumen"}
+                          <input type="file" className="sr-only" disabled={uploadDocument.isPending}
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                            onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadDocument.mutate({ stageId: stage.id, file }); e.target.value = ""; }} />
+                        </label>
+                      </Button>
+                    </div>
+                    {documentsError && <p role="alert" className="text-xs text-destructive">Dokumen tidak dapat dimuat.</p>}
+                    <ul className="space-y-2">
+                      {documents.filter((d) => d.stage_id === stage.id).map((document) => (
+                        <li key={document.id} className="flex min-w-0 items-center gap-2 text-sm">
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 truncate" title={document.file_name}>{document.file_name}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">{(document.file_size / 1024 / 1024).toFixed(1)} MB</span>
+                          <Button size="icon" variant="ghost" title="Unduh dokumen" aria-label={`Unduh ${document.file_name}`} onClick={() => openDocument(document)}><Download /></Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" title="Hapus dokumen" aria-label={`Hapus ${document.file_name}`}><Trash2 className="text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader><AlertDialogTitle>Hapus dokumen?</AlertDialogTitle><AlertDialogDescription>“{document.file_name}” akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => removeDocument.mutate(document)}>Hapus Dokumen</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </li>
+                      ))}
+                      {!documentsError && !documents.some((d) => d.stage_id === stage.id) && <li className="text-xs text-muted-foreground">Belum ada dokumen.</li>}
+                    </ul>
+                  </div>
                 )}
               </section>
             );
