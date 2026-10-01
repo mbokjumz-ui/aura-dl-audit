@@ -17,6 +17,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     meta: [
       { title: "Dasbor — AuditFlow" },
       { name: "description", content: "Ringkasan progres seluruh project audit internal." },
+      { property: "og:title", content: "Dasbor — AuditFlow" },
+      { property: "og:description", content: "Ringkasan progres seluruh proyek audit internal." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Dashboard,

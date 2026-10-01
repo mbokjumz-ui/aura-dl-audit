@@ -6,11 +6,15 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { STAGES, formatDate, projectProgress, type Project, type Stage } from "@/lib/audit";
 
-export const Route = createFileRoute("/_authenticated/proyek")({
+export const Route = createFileRoute("/_authenticated/proyek/")({
   head: () => ({
     meta: [
       { title: "Proyek Audit — AuditFlow" },
       { name: "description", content: "Daftar project audit dan pembuatannya." },
+      { property: "og:title", content: "Proyek Audit — AuditFlow" },
+      { property: "og:description", content: "Daftar proyek audit dan progresnya di AuditFlow." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ProyekPage,

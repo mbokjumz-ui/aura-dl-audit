@@ -11,6 +11,10 @@ export const Route = createFileRoute("/_authenticated/tim")({
     meta: [
       { title: "Tim & Auditor — AuditFlow" },
       { name: "description", content: "Kelola daftar auditor dan kelompok tim audit." },
+      { property: "og:title", content: "Tim & Auditor — AuditFlow" },
+      { property: "og:description", content: "Kelola daftar auditor dan kelompok tim audit." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: TimPage,
