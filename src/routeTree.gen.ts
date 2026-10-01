@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
 import { Route as AuthenticatedTimRouteImport } from './routes/_authenticated/tim'
 import { Route as AuthenticatedProyekIndexRouteImport } from './routes/_authenticated/proyek.index'
 import { Route as AuthenticatedProyekProjectIdRouteImport } from './routes/_authenticated/proyek.$projectId'
@@ -36,6 +37,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProyekRouteRoute =
+  AuthenticatedProyekRouteRouteImport.update({
+    id: '/proyek',
+    path: '/proyek',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTimRoute = AuthenticatedTimRouteImport.update({
   id: '/tim',
   path: '/tim',
@@ -43,20 +50,21 @@ const AuthenticatedTimRoute = AuthenticatedTimRouteImport.update({
 } as any)
 const AuthenticatedProyekIndexRoute =
   AuthenticatedProyekIndexRouteImport.update({
-    id: '/proyek/',
-    path: '/proyek/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedProyekRouteRoute,
   } as any)
 const AuthenticatedProyekProjectIdRoute =
   AuthenticatedProyekProjectIdRouteImport.update({
-    id: '/proyek/$projectId',
-    path: '/proyek/$projectId',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => AuthenticatedProyekRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tim': typeof AuthenticatedTimRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/tim': typeof AuthenticatedTimRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -83,7 +92,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/dashboard' | '/tim' | '/proyek/$projectId' | '/proyek/'
+    | '/'
+    | '/auth'
+    | '/proyek'
+    | '/dashboard'
+    | '/tim'
+    | '/proyek/$projectId'
+    | '/proyek/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/auth' | '/dashboard' | '/tim' | '/proyek/$projectId' | '/proyek'
   id:
@@ -91,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/proyek'
     | '/_authenticated/dashboard'
     | '/_authenticated/tim'
     | '/_authenticated/proyek/$projectId'
@@ -133,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/proyek': {
+      id: '/_authenticated/proyek'
+      path: '/proyek'
+      fullPath: '/proyek'
+      preLoaderRoute: typeof AuthenticatedProyekRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tim': {
       id: '/_authenticated/tim'
       path: '/tim'
@@ -142,33 +165,47 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/proyek/': {
       id: '/_authenticated/proyek/'
-      path: '/proyek'
+      path: '/'
       fullPath: '/proyek/'
       preLoaderRoute: typeof AuthenticatedProyekIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProyekRouteRoute
     }
     '/_authenticated/proyek/$projectId': {
       id: '/_authenticated/proyek/$projectId'
-      path: '/proyek/$projectId'
+      path: '/$projectId'
       fullPath: '/proyek/$projectId'
       preLoaderRoute: typeof AuthenticatedProyekProjectIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedProyekRouteRoute
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedTimRoute: typeof AuthenticatedTimRoute
+interface AuthenticatedProyekRouteRouteChildren {
   AuthenticatedProyekProjectIdRoute: typeof AuthenticatedProyekProjectIdRoute
   AuthenticatedProyekIndexRoute: typeof AuthenticatedProyekIndexRoute
 }
 
+const AuthenticatedProyekRouteRouteChildren: AuthenticatedProyekRouteRouteChildren =
+  {
+    AuthenticatedProyekProjectIdRoute: AuthenticatedProyekProjectIdRoute,
+    AuthenticatedProyekIndexRoute: AuthenticatedProyekIndexRoute,
+  }
+
+const AuthenticatedProyekRouteRouteWithChildren =
+  AuthenticatedProyekRouteRoute._addFileChildren(
+    AuthenticatedProyekRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedProyekRouteRoute: typeof AuthenticatedProyekRouteRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedTimRoute: typeof AuthenticatedTimRoute
+}
+
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedProyekRouteRoute: AuthenticatedProyekRouteRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedTimRoute: AuthenticatedTimRoute,
-  AuthenticatedProyekProjectIdRoute: AuthenticatedProyekProjectIdRoute,
-  AuthenticatedProyekIndexRoute: AuthenticatedProyekIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
