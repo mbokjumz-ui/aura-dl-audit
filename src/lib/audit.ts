@@ -20,13 +20,6 @@ export interface Auditor {
   is_active: boolean;
 }
 
-export interface Team {
-  id: string;
-  name: string;
-  description: string | null;
-  team_members?: { auditor_id: string; auditors: Auditor | null }[];
-}
-
 export interface Project {
   id: string;
   name: string;
@@ -59,11 +52,9 @@ export interface Task {
 export interface Assignment {
   id: string;
   project_id: string;
-  auditor_id: string | null;
-  team_id: string | null;
+  auditor_id: string;
   role: string | null;
   auditors: Auditor | null;
-  teams: Team | null;
 }
 
 export function stageProgress(stage: Stage): number {

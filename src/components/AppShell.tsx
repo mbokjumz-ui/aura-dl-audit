@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dasbor", icon: LayoutDashboard },
   { to: "/proyek", label: "Proyek", icon: FolderKanban },
-  { to: "/tim", label: "Tim & Auditor", icon: Users },
+  { to: "/auditor", label: "Auditor", icon: Users },
 ] as const;
 
 export function AppShell() {
