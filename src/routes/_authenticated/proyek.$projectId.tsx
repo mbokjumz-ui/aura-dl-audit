@@ -26,7 +26,6 @@ import {
   type Auditor,
   type Project,
   type Stage,
-  type Team,
 } from "@/lib/audit";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,8 +66,7 @@ function ProyekDetail() {
   const queryClient = useQueryClient();
   const [newTaskFor, setNewTaskFor] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState({ title: "", due_date: "", auditor_id: "" });
-  const [assignMode, setAssignMode] = useState<"auditor" | "team">("auditor");
-  const [assignTarget, setAssignTarget] = useState("");
+  const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
   const [assignRole, setAssignRole] = useState("anggota");
 
   const { data: project, isLoading, error: projectError } = useQuery({
@@ -98,7 +96,7 @@ function ProyekDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_assignments")
-        .select("*, auditors(*), teams(*)")
+        .select("*, auditors(*)")
         .eq("project_id", projectId);
       if (error) throw error;
       return data as Assignment[];
@@ -123,15 +121,6 @@ function ProyekDetail() {
       const { data, error } = await supabase.from("auditors").select("*").eq("is_active", true).order("name");
       if (error) throw error;
       return data as Auditor[];
-    },
-  });
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ["teams"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("*").order("name");
-      if (error) throw error;
-      return data as Team[];
     },
   });
 
@@ -195,17 +184,18 @@ function ProyekDetail() {
 
   const addAssignment = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("project_assignments").insert({
-        project_id: projectId,
-        auditor_id: assignMode === "auditor" ? assignTarget : null,
-        team_id: assignMode === "team" ? assignTarget : null,
-        role: assignRole,
-      });
+      const availableIds = new Set(auditors.map((a) => a.id));
+      const existingIds = new Set(assignments.map((a) => a.auditor_id));
+      const ids = [...new Set(selectedAuditors)].filter((id) => availableIds.has(id) && !existingIds.has(id));
+      if (ids.length === 0) throw new Error("Pilih auditor yang belum ditugaskan.");
+      const { error } = await supabase.from("project_assignments").insert(
+        ids.map((auditor_id) => ({ project_id: projectId, auditor_id, role: assignRole })),
+      );
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Penugasan ditambahkan");
-      setAssignTarget("");
+      setSelectedAuditors([]);
       invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -301,6 +291,7 @@ function ProyekDetail() {
   }
 
   const progress = projectProgress(project.project_stages);
+  const availableAuditors = auditors.filter((auditor) => !assignments.some((assignment) => assignment.auditor_id === auditor.id));
 
   return (
     <div>
@@ -568,9 +559,9 @@ function ProyekDetail() {
               {assignments.map((a) => (
                 <li key={a.id} className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium">{a.auditors?.name ?? a.teams?.name}</p>
+                     <p className="text-sm font-medium">{a.auditors?.name ?? "Auditor tidak tersedia"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {a.role} · {a.auditor_id ? "Individu" : "Tim"}
+                       {a.role === "ketua tim" ? "Ketua Audit" : a.role === "tim pelaksana" ? "Anggota" : a.role}
                     </p>
                   </div>
                   <button
@@ -589,49 +580,32 @@ function ProyekDetail() {
 
             <div className="mt-5 border-t border-border pt-4">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                <UserPlus className="h-3.5 w-3.5" /> Assign ke Proyek
+                   <UserPlus className="h-3.5 w-3.5" /> Tambah Auditor ke Proyek
               </p>
-              <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-                {(["auditor", "team"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setAssignMode(m);
-                      setAssignTarget("");
-                    }}
-                    className={cn(
-                      "rounded-md py-1.5 text-xs font-semibold",
-                      assignMode === m ? "bg-card shadow-sm" : "text-muted-foreground",
-                    )}
-                  >
-                    {m === "auditor" ? "Individu" : "Tim"}
-                  </button>
-                ))}
-              </div>
               <div className="space-y-2">
-                <select value={assignTarget} onChange={(e) => setAssignTarget(e.target.value)} className={inputCls}>
-                  <option value="">
-                    {assignMode === "auditor" ? "Pilih auditor…" : "Pilih tim…"}
-                  </option>
-                  {(assignMode === "auditor" ? auditors : teams).map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </select>
-                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value)} className={inputCls}>
-                  <option value="ketua tim">Ketua Tim</option>
+                 <div role="group" aria-label="Pilih auditor" className="max-h-48 space-y-1 overflow-y-auto border-y border-border py-2">
+                   {availableAuditors.map((auditor) => (
+                     <label key={auditor.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50">
+                       <input type="checkbox" checked={selectedAuditors.includes(auditor.id)}
+                         onChange={(e) => setSelectedAuditors((current) => e.target.checked ? [...current, auditor.id] : current.filter((id) => id !== auditor.id))}
+                         className="accent-primary" />
+                       <span>{auditor.name}</span>
+                     </label>
+                   ))}
+                   {availableAuditors.length === 0 && <p className="text-xs text-muted-foreground">Semua auditor aktif sudah ditugaskan. Tambahkan auditor baru melalui menu Auditor.</p>}
+                 </div>
+                 <select aria-label="Peran auditor" value={assignRole} onChange={(e) => setAssignRole(e.target.value)} className={inputCls}>
+                   <option value="ketua audit">Ketua Audit</option>
                   <option value="anggota">Anggota</option>
-                  <option value="tim pelaksana">Tim Pelaksana</option>
                   <option value="reviewer">Reviewer</option>
                 </select>
-                <button
-                  disabled={!assignTarget || addAssignment.isPending}
+                 <Button
+                   disabled={selectedAuditors.length === 0 || addAssignment.isPending}
                   onClick={() => addAssignment.mutate()}
-                  className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                   className="w-full"
                 >
-                  Assign
-                </button>
+                   Tugaskan {selectedAuditors.length > 0 ? `${selectedAuditors.length} Auditor` : "Auditor"}
+                 </Button>
               </div>
             </div>
           </section>
