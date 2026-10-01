@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dasbor", icon: LayoutDashboard },
-  { to: "/proyek", label: "Proyek", icon: FolderKanban },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/proyek", label: "Project", icon: FolderKanban },
   { to: "/auditor", label: "Auditor", icon: Users },
 ] as const;
 
@@ -31,8 +31,8 @@ export function AppShell() {
             <ClipboardCheck className="h-5 w-5" />
           </div>
           <div>
-            <p className="font-display text-xl leading-none">AuditFlow</p>
-            <p className="mt-1 text-xs text-sidebar-foreground/60">Internal Audit Monitor</p>
+            <p className="font-display text-2xl leading-none">AURA</p>
+            <p className="mt-1 text-[10px] leading-tight text-sidebar-foreground/70">Audit Updates, Review &amp; Action</p>
           </div>
         </div>
         <nav className="mt-4 flex-1 space-y-1 px-3">

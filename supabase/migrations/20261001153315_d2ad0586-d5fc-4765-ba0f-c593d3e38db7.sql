@@ -1,0 +1,1 @@
+ALTER TABLE public.auditors ADD COLUMN whatsapp_number text;

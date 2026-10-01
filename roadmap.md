@@ -1,3 +1,7 @@
 - [x] Hilangkan pengelolaan tim dan anggota dari halaman auditor dan navigasi.
 - [x] Ubah penugasan proyek menjadi pilihan satu atau beberapa auditor tanpa duplikasi.
 - [x] Verifikasi halaman desktop/mobile dan hasil aplikasi.
+- [ ] Tambahkan edit auditor dan nomor WhatsApp.
+- [ ] Sinkronkan hitungan tugas Dashboard dengan Project aktif dan penghapusan.
+- [ ] Ganti identitas AURA, istilah Project/Dashboard, dan palet biru tua/biru muda.
+- [ ] Uji fungsi serta tampilan desktop/mobile.

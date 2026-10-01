@@ -15,10 +15,10 @@ import {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dasbor — AuditFlow" },
+      { title: "Dashboard — AURA" },
       { name: "description", content: "Ringkasan progres seluruh project audit internal." },
-      { property: "og:title", content: "Dasbor — AuditFlow" },
-      { property: "og:description", content: "Ringkasan progres seluruh proyek audit internal." },
+      { property: "og:title", content: "Dashboard — AURA" },
+      { property: "og:description", content: "Ringkasan progres seluruh project audit internal." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -33,6 +33,8 @@ interface ProjectWithStages extends Project {
 function Dashboard() {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects-with-stages"],
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
@@ -55,14 +57,15 @@ function Dashboard() {
     },
   });
 
-  const allTasks = projects.flatMap((p) => p.project_stages.flatMap((s) => s.stage_tasks ?? []));
+  const activeProjects = projects.filter((p) => p.status === "berjalan");
+  const allTasks = activeProjects.flatMap((p) => p.project_stages.flatMap((s) => s.stage_tasks ?? []));
   const doneTasks = allTasks.filter((t) => t.is_done).length;
   const overdueTasks = allTasks.filter((t) => isOverdue(t.due_date, t.is_done)).length;
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="font-display text-3xl md:text-4xl">Dasbor</h1>
+        <h1 className="font-display text-3xl md:text-4xl">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Ringkasan progres seluruh project audit yang sedang berjalan.
         </p>
@@ -70,7 +73,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {[
-          { icon: FolderKanban, label: "Proyek Aktif", value: projects.filter((p) => p.status === "berjalan").length },
+          { icon: FolderKanban, label: "Project Aktif", value: activeProjects.length },
           { icon: Users, label: "Auditor Aktif", value: auditorCount },
           { icon: ListChecks, label: "Tugas Selesai", value: `${doneTasks}/${allTasks.length}` },
           { icon: AlertTriangle, label: "Tugas Terlambat", value: overdueTasks, danger: overdueTasks > 0 },
@@ -87,7 +90,7 @@ function Dashboard() {
         ))}
       </div>
 
-      <h2 className="mb-4 mt-10 text-lg font-semibold">Progres Proyek</h2>
+      <h2 className="mb-4 mt-10 text-lg font-semibold">Progres Project</h2>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Memuat data…</p>
       ) : projects.length === 0 ? (
@@ -97,7 +100,7 @@ function Dashboard() {
             to="/proyek"
             className="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
-            Buat Proyek
+            Buat Project
           </Link>
         </div>
       ) : (

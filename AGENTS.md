@@ -12,3 +12,4 @@
 - Keep `/proyek` as an index leaf beneath an Outlet-rendering parent route; the detail path is nested and otherwise cannot render.
 - Store Pelaporan and Closing documents in private audit-documents storage with stage_documents metadata; private access and cascade-linked records keep audit files associated with their project.
 - Keep project assignments auditor-only with one assignment per auditor per project; groups were retired and existing group assignments converted to individual records to preserve project staffing.
+- Store optional auditor WhatsApp numbers on auditors.whatsapp_number so contact details stay attached to each auditor record.

@@ -18,6 +18,7 @@ export interface Auditor {
   email: string | null;
   position: string | null;
   is_active: boolean;
+  whatsapp_number: string | null;
 }
 
 export interface Project {
