@@ -1,0 +1,492 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Circle,
+  Plus,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  STAGES,
+  formatDate,
+  isOverdue,
+  projectProgress,
+  stageProgress,
+  type Assignment,
+  type Auditor,
+  type Project,
+  type Stage,
+  type Team,
+} from "@/lib/audit";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_authenticated/proyek/$projectId")({
+  head: () => ({
+    meta: [
+      { title: "Detail Proyek — AuditFlow" },
+      { name: "description", content: "Detail tahapan, ceklist tugas, dan penugasan project audit." },
+    ],
+  }),
+  component: ProyekDetail,
+});
+
+function ProyekDetail() {
+  const { projectId } = Route.useParams();
+  const queryClient = useQueryClient();
+  const [newTaskFor, setNewTaskFor] = useState<string | null>(null);
+  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", auditor_id: "" });
+  const [assignMode, setAssignMode] = useState<"auditor" | "team">("auditor");
+  const [assignTarget, setAssignTarget] = useState("");
+  const [assignRole, setAssignRole] = useState("anggota");
+
+  const { data: project, isLoading } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, project_stages(*, stage_tasks(*))")
+        .eq("id", projectId)
+        .single();
+      if (error) throw error;
+      const sorted = {
+        ...data,
+        project_stages: (data.project_stages as Stage[])
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((s) => ({
+            ...s,
+            stage_tasks: (s.stage_tasks ?? []).sort((a, b) => a.title.localeCompare(b.title)),
+          })),
+      };
+      return sorted as Project & { project_stages: Stage[] };
+    },
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["assignments", projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_assignments")
+        .select("*, auditors(*), teams(*)")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return data as Assignment[];
+    },
+  });
+
+  const { data: auditors = [] } = useQuery({
+    queryKey: ["auditors"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("auditors").select("*").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data as Auditor[];
+    },
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("teams").select("*").order("name");
+      if (error) throw error;
+      return data as Team[];
+    },
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    queryClient.invalidateQueries({ queryKey: ["assignments", projectId] });
+    queryClient.invalidateQueries({ queryKey: ["projects-with-stages"] });
+  };
+
+  const toggleTask = useMutation({
+    mutationFn: async ({ id, isDone }: { id: string; isDone: boolean }) => {
+      const { error } = await supabase
+        .from("stage_tasks")
+        .update({ is_done: !isDone, done_at: !isDone ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
+  });
+
+  const addTask = useMutation({
+    mutationFn: async (stageId: string) => {
+      const { error } = await supabase.from("stage_tasks").insert({
+        stage_id: stageId,
+        title: taskForm.title,
+        due_date: taskForm.due_date || null,
+        auditor_id: taskForm.auditor_id || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Tugas ditambahkan");
+      setTaskForm({ title: "", due_date: "", auditor_id: "" });
+      setNewTaskFor(null);
+      invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeTask = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("stage_tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
+  });
+
+  const setTargetDate = useMutation({
+    mutationFn: async ({ stageId, date }: { stageId: string; date: string }) => {
+      const { error } = await supabase
+        .from("project_stages")
+        .update({ target_date: date || null })
+        .eq("id", stageId);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
+  });
+
+  const addAssignment = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("project_assignments").insert({
+        project_id: projectId,
+        auditor_id: assignMode === "auditor" ? assignTarget : null,
+        team_id: assignMode === "team" ? assignTarget : null,
+        role: assignRole,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Penugasan ditambahkan");
+      setAssignTarget("");
+      invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeAssignment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_assignments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
+  });
+
+  const toggleStatus = useMutation({
+    mutationFn: async (status: string) => {
+      const { error } = await supabase.from("projects").update({ status }).eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
+  });
+
+  const inputCls =
+    "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
+
+  if (isLoading || !project) {
+    return <p className="text-sm text-muted-foreground">Memuat data…</p>;
+  }
+
+  const progress = projectProgress(project.project_stages);
+
+  return (
+    <div>
+      <Link
+        to="/proyek"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Semua Proyek
+      </Link>
+
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl leading-tight md:text-4xl">{project.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {project.auditee} · {formatDate(project.period_start)} — {formatDate(project.period_end)}
+          </p>
+          {project.description && (
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{project.description}</p>
+          )}
+        </div>
+        <button
+          onClick={() => toggleStatus.mutate(project.status === "selesai" ? "berjalan" : "selesai")}
+          className={cn(
+            "rounded-lg px-4 py-2 text-sm font-semibold",
+            project.status === "selesai"
+              ? "border border-input bg-background"
+              : "bg-primary text-primary-foreground",
+          )}
+        >
+          {project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
+        </button>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium">Progres Keseluruhan</span>
+          <span className="font-bold">{progress}%</span>
+        </div>
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Tahapan */}
+        <div className="space-y-4 lg:col-span-2">
+          <h2 className="text-lg font-semibold">Tahapan & Ceklist Tugas</h2>
+          {project.project_stages.map((stage, idx) => {
+            const meta = STAGES.find((s) => s.key === stage.stage_key);
+            const sp = stageProgress(stage);
+            const tasks = stage.stage_tasks ?? [];
+            const complete = sp === 100 && tasks.length > 0;
+            return (
+              <section
+                key={stage.id}
+                className={cn(
+                  "rounded-2xl border bg-card p-5",
+                  complete ? "border-primary/40" : "border-border",
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold",
+                        complete
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {complete ? <Check className="h-4 w-4" /> : idx + 1}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{meta?.label ?? stage.stage_key}</h3>
+                      <p className="text-xs text-muted-foreground">{meta?.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    <input
+                      type="date"
+                      defaultValue={stage.target_date ?? ""}
+                      onBlur={(e) => {
+                        if (e.target.value !== (stage.target_date ?? ""))
+                          setTargetDate.mutate({ stageId: stage.id, date: e.target.value });
+                      }}
+                      className="rounded-md border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${sp}%` }} />
+                  </div>
+                  <span className="text-xs font-semibold">{sp}%</span>
+                </div>
+
+                <ul className="mt-4 space-y-1">
+                  {tasks.map((t) => {
+                    const overdue = isOverdue(t.due_date, t.is_done);
+                    const assignee = auditors.find((a) => a.id === t.auditor_id);
+                    return (
+                      <li
+                        key={t.id}
+                        className="group flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/50"
+                      >
+                        <button
+                          onClick={() => toggleTask.mutate({ id: t.id, isDone: t.is_done })}
+                          aria-label={t.is_done ? "Tandai belum selesai" : "Tandai selesai"}
+                          className="shrink-0"
+                        >
+                          {t.is_done ? (
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Circle className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={cn(
+                              "text-sm",
+                              t.is_done ? "text-muted-foreground line-through" : "font-medium",
+                            )}
+                          >
+                            {t.title}
+                          </p>
+                          <p className={cn("text-xs", overdue ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                            {t.due_date ? `Target: ${formatDate(t.due_date)}` : "Tanpa target"}
+                            {overdue && " · Terlambat"}
+                            {assignee && ` · ${assignee.name}`}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeTask.mutate(t.id)}
+                          className="rounded p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                          aria-label={`Hapus tugas ${t.title}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {tasks.length === 0 && (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">Belum ada tugas di tahap ini.</p>
+                  )}
+                </ul>
+
+                {newTaskFor === stage.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      addTask.mutate(stage.id);
+                    }}
+                    className="mt-3 space-y-2 rounded-xl bg-muted/50 p-3"
+                  >
+                    <input
+                      required
+                      autoFocus
+                      placeholder="Nama tugas"
+                      value={taskForm.title}
+                      onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                      className={inputCls}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={taskForm.due_date}
+                        onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                        className={inputCls}
+                      />
+                      <select
+                        value={taskForm.auditor_id}
+                        onChange={(e) => setTaskForm({ ...taskForm, auditor_id: e.target.value })}
+                        className={inputCls}
+                      >
+                        <option value="">Tanpa penanggung jawab</option>
+                        {auditors.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                        Simpan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewTaskFor(null)}
+                        className="rounded-lg border border-input px-4 py-2 text-sm"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setNewTaskFor(stage.id)}
+                    className="mt-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-primary hover:bg-accent"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Tambah Tugas
+                  </button>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        {/* Penugasan */}
+        <div>
+          <h2 className="mb-4 text-lg font-semibold">Penugasan</h2>
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <ul className="space-y-3">
+              {assignments.map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">{a.auditors?.name ?? a.teams?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.role} · {a.auditor_id ? "Individu" : "Tim"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeAssignment.mutate(a.id)}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
+                    aria-label="Hapus penugasan"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+              {assignments.length === 0 && (
+                <p className="text-sm text-muted-foreground">Belum ada penugasan.</p>
+              )}
+            </ul>
+
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <UserPlus className="h-3.5 w-3.5" /> Assign ke Proyek
+              </p>
+              <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+                {(["auditor", "team"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setAssignMode(m);
+                      setAssignTarget("");
+                    }}
+                    className={cn(
+                      "rounded-md py-1.5 text-xs font-semibold",
+                      assignMode === m ? "bg-card shadow-sm" : "text-muted-foreground",
+                    )}
+                  >
+                    {m === "auditor" ? "Individu" : "Tim"}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <select value={assignTarget} onChange={(e) => setAssignTarget(e.target.value)} className={inputCls}>
+                  <option value="">
+                    {assignMode === "auditor" ? "Pilih auditor…" : "Pilih tim…"}
+                  </option>
+                  {(assignMode === "auditor" ? auditors : teams).map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                    </option>
+                  ))}
+                </select>
+                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value)} className={inputCls}>
+                  <option value="ketua tim">Ketua Tim</option>
+                  <option value="anggota">Anggota</option>
+                  <option value="tim pelaksana">Tim Pelaksana</option>
+                  <option value="reviewer">Reviewer</option>
+                </select>
+                <button
+                  disabled={!assignTarget || addAssignment.isPending}
+                  onClick={() => addAssignment.mutate()}
+                  className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
