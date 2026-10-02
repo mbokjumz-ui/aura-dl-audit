@@ -111,7 +111,7 @@ function AuditorPage() {
       <div className="mb-8">
         <h1 className="font-display text-3xl md:text-4xl">Auditor</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kelola daftar auditor untuk penugasan proyek.
+          Kelola daftar auditor untuk penugasan project.
         </p>
       </div>
 
