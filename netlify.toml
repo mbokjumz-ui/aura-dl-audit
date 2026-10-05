@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Build the TanStack Start server for Netlify Functions instead of the default Cloudflare target
+  NITRO_PRESET = "netlify"
