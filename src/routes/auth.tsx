@@ -19,6 +19,12 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const LOVABLE_HOSTS = ["lovable.app", "lovableproject.com", "lovableproject-dev.com", "lovable.dev"];
+
+function isLovableHost(hostname: string) {
+  return LOVABLE_HOSTS.some((h) => hostname === h || hostname.endsWith(`.${h}`));
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -64,6 +70,17 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
+    // Lovable's OAuth broker (/~oauth/initiate) only exists on Lovable hosting.
+    // Elsewhere (e.g. Netlify) use Supabase's own Google OAuth redirect flow.
+    if (!isLovableHost(window.location.hostname)) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth` },
+      });
+      if (error) toast.error("Gagal masuk dengan Google");
+      return;
+    }
+
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
