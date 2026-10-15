@@ -13,3 +13,5 @@
 - Store Pelaporan and Closing documents in private audit-documents storage with stage_documents metadata; private access and cascade-linked records keep audit files associated with their project.
 - Keep project assignments auditor-only with one assignment per auditor per project; groups were retired and existing group assignments converted to individual records to preserve project staffing.
 - Store optional auditor WhatsApp numbers on auditors.whatsapp_number so contact details stay attached to each auditor record.
+- Store archive findings independently of operational projects using a project identity and name snapshot; deleting a project must not erase retained audit results.
+- Keep archive attachments in private archive-documents storage with archive_documents metadata linked to findings; authenticated internal users share archive access like existing audit records.
