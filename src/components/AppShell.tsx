@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/proyek", label: "Project", icon: FolderKanban },
   { to: "/auditor", label: "Auditor", icon: Users },
+  { to: "/arsip", label: "Arsip", icon: Archive },
 ] as const;
 
 export function AppShell() {
@@ -75,7 +76,7 @@ export function AppShell() {
 
       {/* Bottom nav mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {NAV_ITEMS.map((item) => {
             const active = pathname.startsWith(item.to);
             return (

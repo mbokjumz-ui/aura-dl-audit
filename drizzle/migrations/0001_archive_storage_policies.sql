@@ -1,0 +1,3 @@
+CREATE POLICY "Signed in users read archive files" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'archive-documents');
+CREATE POLICY "Signed in users upload archive files" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'archive-documents' AND EXISTS (SELECT 1 FROM public.archive_findings f WHERE (storage.foldername(name))[1] = f.id::text));
+CREATE POLICY "Signed in users remove archive files" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'archive-documents');
