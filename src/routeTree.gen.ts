@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedArsipRouteImport } from './routes/_authenticated/arsip'
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
@@ -31,6 +32,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedArsipRoute = AuthenticatedArsipRouteImport.update({
+  id: '/arsip',
+  path: '/arsip',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditorRoute = AuthenticatedAuditorRouteImport.update({
   id: '/auditor',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
+  '/arsip': typeof AuthenticatedArsipRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/arsip': typeof AuthenticatedArsipRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
+  '/_authenticated/arsip': typeof AuthenticatedArsipRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -95,19 +104,27 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/proyek'
+    | '/arsip'
     | '/auditor'
     | '/dashboard'
     | '/proyek/$projectId'
     | '/proyek/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/auth' | '/auditor' | '/dashboard' | '/proyek/$projectId' | '/proyek'
+    | '/'
+    | '/auth'
+    | '/arsip'
+    | '/auditor'
+    | '/dashboard'
+    | '/proyek/$projectId'
+    | '/proyek'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/proyek'
+    | '/_authenticated/arsip'
     | '/_authenticated/auditor'
     | '/_authenticated/dashboard'
     | '/_authenticated/proyek/$projectId'
@@ -142,6 +159,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/arsip': {
+      id: '/_authenticated/arsip'
+      path: '/arsip'
+      fullPath: '/arsip'
+      preLoaderRoute: typeof AuthenticatedArsipRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/auditor': {
       id: '/_authenticated/auditor'
@@ -199,12 +223,14 @@ const AuthenticatedProyekRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedProyekRouteRoute: typeof AuthenticatedProyekRouteRouteWithChildren
+  AuthenticatedArsipRoute: typeof AuthenticatedArsipRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProyekRouteRoute: AuthenticatedProyekRouteRouteWithChildren,
+  AuthenticatedArsipRoute: AuthenticatedArsipRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
 }
