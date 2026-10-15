@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      archive_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          finding_id: string
+          id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          finding_id: string
+          id?: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          finding_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "archive_documents_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "archive_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      archive_findings: {
+        Row: {
+          archive_month: number
+          archive_year: number
+          created_at: string
+          description: string
+          finding_number: string
+          id: string
+          project_key: string
+          project_name: string
+          title: string
+        }
+        Insert: {
+          archive_month: number
+          archive_year: number
+          created_at?: string
+          description?: string
+          finding_number: string
+          id?: string
+          project_key: string
+          project_name: string
+          title: string
+        }
+        Update: {
+          archive_month?: number
+          archive_year?: number
+          created_at?: string
+          description?: string
+          finding_number?: string
+          id?: string
+          project_key?: string
+          project_name?: string
+          title?: string
+        }
+        Relationships: []
+      }
       auditors: {
         Row: {
           created_at: string
