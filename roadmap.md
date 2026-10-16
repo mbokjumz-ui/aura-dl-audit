@@ -7,3 +7,5 @@
 - [x] Uji fungsi serta tampilan desktop/mobile.
 - [x] Tambahkan menu Arsip dengan Tahun → Bulan → Project → Nomor Temuan.
 - [x] Simpan detail temuan dan lampiran privat, serta uji alur arsip.
+- [ ] Tambahkan Arsip ISO terpisah dengan Tahun → Object ISO dan dokumen privat.
+- [ ] Uji penyimpanan, lampiran, dan navigasi Arsip ISO.
