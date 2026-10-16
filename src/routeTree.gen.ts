@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedArsipRouteImport } from './routes/_authenticated/arsip'
+import { Route as AuthenticatedArsipIsoRouteImport } from './routes/_authenticated/arsip-iso'
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
@@ -36,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedArsipRoute = AuthenticatedArsipRouteImport.update({
   id: '/arsip',
   path: '/arsip',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedArsipIsoRoute = AuthenticatedArsipIsoRouteImport.update({
+  id: '/arsip-iso',
+  path: '/arsip-iso',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditorRoute = AuthenticatedAuditorRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/arsip': typeof AuthenticatedArsipRoute
+  '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/arsip': typeof AuthenticatedArsipRoute
+  '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/_authenticated/arsip': typeof AuthenticatedArsipRoute
+  '/_authenticated/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/proyek'
     | '/arsip'
+    | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
     | '/proyek/$projectId'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/arsip'
+    | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
     | '/proyek/$projectId'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/proyek'
     | '/_authenticated/arsip'
+    | '/_authenticated/arsip-iso'
     | '/_authenticated/auditor'
     | '/_authenticated/dashboard'
     | '/_authenticated/proyek/$projectId'
@@ -165,6 +177,13 @@ declare module '@tanstack/react-router' {
       path: '/arsip'
       fullPath: '/arsip'
       preLoaderRoute: typeof AuthenticatedArsipRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/arsip-iso': {
+      id: '/_authenticated/arsip-iso'
+      path: '/arsip-iso'
+      fullPath: '/arsip-iso'
+      preLoaderRoute: typeof AuthenticatedArsipIsoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/auditor': {
@@ -224,6 +243,7 @@ const AuthenticatedProyekRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedProyekRouteRoute: typeof AuthenticatedProyekRouteRouteWithChildren
   AuthenticatedArsipRoute: typeof AuthenticatedArsipRoute
+  AuthenticatedArsipIsoRoute: typeof AuthenticatedArsipIsoRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
 }
@@ -231,6 +251,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProyekRouteRoute: AuthenticatedProyekRouteRouteWithChildren,
   AuthenticatedArsipRoute: AuthenticatedArsipRoute,
+  AuthenticatedArsipIsoRoute: AuthenticatedArsipIsoRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
 }
