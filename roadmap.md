@@ -5,5 +5,5 @@
 - [x] Sinkronkan hitungan tugas Dashboard dengan Project aktif dan penghapusan.
 - [x] Ganti identitas AURA, istilah Project/Dashboard, dan palet biru tua/biru muda.
 - [x] Uji fungsi serta tampilan desktop/mobile.
-- [ ] Tambahkan menu Arsip dengan Tahun → Bulan → Project → Nomor Temuan.
-- [ ] Simpan detail temuan dan lampiran privat, serta uji alur arsip.
+- [x] Tambahkan menu Arsip dengan Tahun → Bulan → Project → Nomor Temuan.
+- [x] Simpan detail temuan dan lampiran privat, serta uji alur arsip.
