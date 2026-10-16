@@ -118,6 +118,65 @@ export type Database = {
         }
         Relationships: []
       }
+      iso_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          object_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          object_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          object_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iso_documents_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "iso_objects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iso_objects: {
+        Row: {
+          archive_year: number
+          created_at: string
+          id: string
+          object_name: string
+        }
+        Insert: {
+          archive_year: number
+          created_at?: string
+          id?: string
+          object_name: string
+        }
+        Update: {
+          archive_year?: number
+          created_at?: string
+          id?: string
+          object_name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
