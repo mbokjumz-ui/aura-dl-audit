@@ -95,7 +95,7 @@ function ArchivePage() {
       {projects.error && <p role="alert" className="text-sm text-destructive">Daftar project tidak dapat dimuat.</p>}
       <label className="block text-sm font-medium">Nomor Temuan<Input required value={form.number} onChange={e => setForm({ ...form, number:e.target.value })} className="mt-1" /></label>
       <label className="block text-sm font-medium">Judul Temuan<Input required value={form.title} onChange={e => setForm({ ...form, title:e.target.value })} className="mt-1" /></label>
-      <label className="block text-sm font-medium">Uraian Hasil Audit<Textarea rows={5} value={form.description} onChange={e => setForm({ ...form, description:e.target.value })} className="mt-1" /></label>
+      <label className="block text-sm font-medium">Uraian Hasil Audit<Textarea aria-label="Uraian Hasil Audit" rows={5} value={form.description} onChange={e => setForm({ ...form, description:e.target.value })} className="mt-1" /></label>
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={save.isPending} onClick={() => setShowForm(false)}>Batal</Button><Button disabled={save.isPending}>{save.isPending ? "Menyimpan…" : "Simpan Temuan"}</Button></div>
     </form></DialogContent></Dialog>
   </div>;
