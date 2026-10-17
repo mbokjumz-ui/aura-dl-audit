@@ -118,6 +118,219 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_access: {
+        Row: {
+          created_at: string
+          expires_at: string
+          follow_up_project_id: string
+          id: string
+          item_id: string | null
+          recipient_role: string
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          follow_up_project_id: string
+          id?: string
+          item_id?: string | null
+          recipient_role: string
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          follow_up_project_id?: string
+          id?: string
+          item_id?: string | null
+          recipient_role?: string
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_access_follow_up_project_id_fkey"
+            columns: ["follow_up_project_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_access_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_documents: {
+        Row: {
+          content_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          content_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          content_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_documents_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_items: {
+        Row: {
+          created_at: string
+          description: string
+          due_date: string | null
+          executor_email: string
+          executor_name: string
+          follow_up_project_id: string
+          id: string
+          review_note: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          executor_email: string
+          executor_name: string
+          follow_up_project_id: string
+          id?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          executor_email?: string
+          executor_name?: string
+          follow_up_project_id?: string
+          id?: string
+          review_note?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_items_follow_up_project_id_fkey"
+            columns: ["follow_up_project_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_projects: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string | null
+          project_name: string
+          responsible_email: string
+          responsible_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          project_name: string
+          responsible_email: string
+          responsible_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          project_name?: string
+          responsible_email?: string
+          responsible_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_submissions: {
+        Row: {
+          access_id: string | null
+          author_role: string
+          created_at: string
+          description: string
+          id: string
+          item_id: string
+        }
+        Insert: {
+          access_id?: string | null
+          author_role: string
+          created_at?: string
+          description: string
+          id?: string
+          item_id: string
+        }
+        Update: {
+          access_id?: string | null
+          author_role?: string
+          created_at?: string
+          description?: string
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_submissions_access_id_fkey"
+            columns: ["access_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_submissions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       iso_documents: {
         Row: {
           content_type: string
@@ -399,7 +612,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      submit_follow_up: {
+        Args: {
+          _access_id: string
+          _description: string
+          _documents: Json
+          _item_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
