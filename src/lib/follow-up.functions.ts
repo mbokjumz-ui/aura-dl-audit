@@ -27,17 +27,9 @@ export const createFollowUpLink = createServerFn({ method: 'POST' }).middleware(
     return { token, expiresAt };
   });
 
-// The token is a bearer credential: only its SHA-256 fingerprint is persisted.
-async function resolveAccess(token: string) {
-  tokenSchema.parse(token);
-  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const { data, error } = await supabaseAdmin.from('follow_up_access').select('*').eq('token_hash', await hashAccessToken(token)).is('revoked_at', null).gt('expires_at', new Date().toISOString()).single();
-  if (error || !data) throw new Error('Link tidak berlaku atau sudah kedaluwarsa. Hubungi auditor untuk link baru.');
-  return { access: data, db: supabaseAdmin };
-}
-
 export const readAuditeeFollowUp = createServerFn({ method: 'POST' }).inputValidator(z.object({ token: tokenSchema }))
   .handler(async ({ data }) => {
+    const { resolveAccess } = await import('./follow-up-access.server');
     const { access, db } = await resolveAccess(data.token);
     const project = await db.from('follow_up_projects').select('id, project_name, responsible_name').eq('id', access.follow_up_project_id).single();
     let query = db.from('follow_up_items').select('id, follow_up_project_id, title, description, executor_name, due_date, status, review_note, follow_up_submissions(id, description, author_role, created_at, follow_up_documents(id, file_name))').eq('follow_up_project_id', access.follow_up_project_id).order('created_at');
@@ -53,6 +45,7 @@ export const submitAuditeeFollowUp = createServerFn({ method: 'POST' })
     const token = tokenSchema.parse(data.get('token'));
     const itemId = idSchema.parse(data.get('itemId'));
     const description = z.string().trim().min(1).max(10000).parse(data.get('description'));
+    const { resolveAccess } = await import('./follow-up-access.server');
     const { access, db } = await resolveAccess(token);
     const item = await db.from('follow_up_items').select('id, follow_up_project_id, status').eq('id', itemId).single();
     if (!item.data || !accessAllows(access, item.data) || !canSubmit(item.data.status)) throw new Error('Poin ini tidak dapat diperbarui.');
@@ -78,6 +71,7 @@ export const submitAuditeeFollowUp = createServerFn({ method: 'POST' })
 
 export const downloadAuditeeEvidence = createServerFn({ method: 'POST' }).inputValidator(z.object({ token: tokenSchema, documentId: idSchema }))
   .handler(async ({ data }) => {
+    const { resolveAccess } = await import('./follow-up-access.server');
     const { access, db } = await resolveAccess(data.token);
     const doc = await db.from('follow_up_documents').select('file_path, file_name, follow_up_submissions!inner(follow_up_items!inner(id, follow_up_project_id))').eq('id', data.documentId).single();
     const item = doc.data?.follow_up_submissions.follow_up_items;
