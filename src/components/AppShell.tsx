@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users, FileCheck2 } from "lucide-react";
+import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users, FileCheck2, ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: "/auditor", label: "Auditor", icon: Users },
   { to: "/arsip", label: "Arsip", icon: Archive },
   { to: "/arsip-iso", label: "Arsip ISO", icon: FileCheck2 },
+  { to: "/tindak-lanjut", label: "Tindak Lanjut", icon: ListChecks },
 ] as const;
 
 export function AppShell() {
@@ -77,7 +78,7 @@ export function AppShell() {
 
       {/* Bottom nav mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-6">
+        <div className="flex overflow-x-auto">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
             return (
@@ -85,7 +86,7 @@ export function AppShell() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium",
+                  "flex min-w-16 flex-1 flex-col items-center gap-1 whitespace-nowrap px-1 py-2.5 text-[11px] font-medium",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
@@ -96,7 +97,7 @@ export function AppShell() {
           })}
           <button
             onClick={handleSignOut}
-            className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground"
+            className="flex min-w-16 flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground"
           >
             <LogOut className="h-5 w-5" />
             Keluar

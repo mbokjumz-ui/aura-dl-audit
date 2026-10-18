@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuditeeRouteImport } from './routes/auditee'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedArsipRouteImport } from './routes/_authenticated/arsip'
 import { Route as AuthenticatedArsipIsoRouteImport } from './routes/_authenticated/arsip-iso'
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
+import { Route as AuthenticatedTindakLanjutRouteImport } from './routes/_authenticated/tindak-lanjut'
 import { Route as AuthenticatedProyekIndexRouteImport } from './routes/_authenticated/proyek.index'
 import { Route as AuthenticatedProyekProjectIdRouteImport } from './routes/_authenticated/proyek.$projectId'
 
@@ -27,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditeeRoute = AuditeeRouteImport.update({
+  id: '/auditee',
+  path: '/auditee',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -60,6 +67,12 @@ const AuthenticatedProyekRouteRoute =
     path: '/proyek',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTindakLanjutRoute =
+  AuthenticatedTindakLanjutRouteImport.update({
+    id: '/tindak-lanjut',
+    path: '/tindak-lanjut',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProyekIndexRoute =
   AuthenticatedProyekIndexRouteImport.update({
     id: '/',
@@ -75,22 +88,26 @@ const AuthenticatedProyekProjectIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
   '/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/arsip': typeof AuthenticatedArsipRoute
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/proyek/': typeof AuthenticatedProyekIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
   '/arsip': typeof AuthenticatedArsipRoute
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/proyek': typeof AuthenticatedProyekIndexRoute
 }
@@ -98,12 +115,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
   '/_authenticated/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
   '/_authenticated/arsip': typeof AuthenticatedArsipRoute
   '/_authenticated/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/_authenticated/proyek/': typeof AuthenticatedProyekIndexRoute
 }
@@ -111,34 +130,40 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auditee'
     | '/auth'
     | '/proyek'
     | '/arsip'
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/tindak-lanjut'
     | '/proyek/$projectId'
     | '/proyek/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auditee'
     | '/auth'
     | '/arsip'
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/tindak-lanjut'
     | '/proyek/$projectId'
     | '/proyek'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/auditee'
     | '/auth'
     | '/_authenticated/proyek'
     | '/_authenticated/arsip'
     | '/_authenticated/arsip-iso'
     | '/_authenticated/auditor'
     | '/_authenticated/dashboard'
+    | '/_authenticated/tindak-lanjut'
     | '/_authenticated/proyek/$projectId'
     | '/_authenticated/proyek/'
   fileRoutesById: FileRoutesById
@@ -146,6 +171,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuditeeRoute: typeof AuditeeRoute
   AuthRoute: typeof AuthRoute
 }
 
@@ -163,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditee': {
+      id: '/auditee'
+      path: '/auditee'
+      fullPath: '/auditee'
+      preLoaderRoute: typeof AuditeeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -207,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProyekRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tindak-lanjut': {
+      id: '/_authenticated/tindak-lanjut'
+      path: '/tindak-lanjut'
+      fullPath: '/tindak-lanjut'
+      preLoaderRoute: typeof AuthenticatedTindakLanjutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/proyek/': {
       id: '/_authenticated/proyek/'
       path: '/'
@@ -246,6 +286,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArsipIsoRoute: typeof AuthenticatedArsipIsoRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedTindakLanjutRoute: typeof AuthenticatedTindakLanjutRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -254,6 +295,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArsipIsoRoute: AuthenticatedArsipIsoRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedTindakLanjutRoute: AuthenticatedTindakLanjutRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -262,6 +304,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuditeeRoute: AuditeeRoute,
   AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport

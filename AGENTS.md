@@ -16,3 +16,6 @@
 - Store archive findings independently of operational projects using a project identity and name snapshot; deleting a project must not erase retained audit results.
 - Keep archive attachments in private archive-documents storage with archive_documents metadata linked to findings; authenticated internal users share archive access like existing audit records.
 - Store ISO objects separately from audit findings, with cascade-linked iso_documents in private iso-documents storage; reuse ArchiveDocuments through explicit typed owner props to keep upload and access behavior consistent across archives.
+- Store follow-up responsibility per completed project and executors per item; preserve project-name snapshots so retained follow-ups survive operational project deletion.
+- Auditee access uses expiring, revocable capability links with only token hashes persisted and server-validated project/item scopes; keep privileged access resolution in a server-only module.
+- Keep follow-up evidence private and submissions append-only; commit evidence metadata and submitted status atomically, requiring auditor review before approval.
