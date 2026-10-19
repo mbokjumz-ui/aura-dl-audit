@@ -9,7 +9,7 @@
 - [x] Simpan detail temuan dan lampiran privat, serta uji alur arsip.
 - [x] Tambahkan Arsip ISO terpisah dengan Tahun → Object ISO dan dokumen privat.
 - [x] Uji penyimpanan, lampiran, dan navigasi Arsip ISO.
-- [ ] Tambahkan tindak lanjut Project selesai, penanggung jawab Project, dan pelaksana tiap poin.
-- [ ] Tambahkan link auditee privat, pembaruan keterangan/bukti, dan tinjauan auditor.
-- [ ] Aktifkan notifikasi email penanggung jawab dan pelaksana.
-- [ ] Uji alur tindak lanjut dan keamanan akses.
+- [x] Tambahkan tindak lanjut Project selesai, penanggung jawab Project, dan pelaksana tiap poin.
+- [x] Tambahkan link auditee privat, pembaruan keterangan/bukti, dan tinjauan auditor.
+- [ ] Aktifkan notifikasi email penanggung jawab dan pelaksana — menunggu domain pengirim milik pengguna; lanjutkan template dan pemicu pengiriman setelah domain diatur.
+- [x] Uji alur tindak lanjut dan keamanan akses.
