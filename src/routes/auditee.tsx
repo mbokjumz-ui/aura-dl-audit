@@ -21,7 +21,12 @@ export const Route = createFileRoute('/auditee')({
 
 function AuditeePage() {
   const [token, setToken] = useState<string>();
-  useEffect(() => { setToken(new URLSearchParams(window.location.hash.slice(1)).get('token') ?? ''); }, []);
+  useEffect(() => {
+    const readToken = () => setToken(new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '');
+    readToken();
+    window.addEventListener('hashchange', readToken);
+    return () => window.removeEventListener('hashchange', readToken);
+  }, []);
   const read = useServerFn(readAuditeeFollowUp);
   const submit = useServerFn(submitAuditeeFollowUp);
   const download = useServerFn(downloadAuditeeEvidence);
