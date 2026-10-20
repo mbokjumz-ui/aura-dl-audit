@@ -2,15 +2,15 @@ import { it } from 'node:test';
 import assert from 'node:assert/strict';
 import { hashAccessToken } from './follow-up';
 
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const url = process.env['SUPABASE_URL'];
+const key = process.env['SUPABASE_SERVICE_ROLE_KEY'];
 
-it('saves auditee evidence atomically and revokes links only when the matching recipient changes', { skip: !url || !key }, async () => {
+it('saves auditee evidence atomically and revokes links only when the matching recipient changes', { skip: !url || !key, timeout: 30000 }, async () => {
   if (!url || !key) return;
   const headers: Record<string, string> = { apikey: key, 'Content-Type': 'application/json', Prefer: 'return=representation' };
-  if (!key.startsWith('sb_')) headers.Authorization = `Bearer ${key}`;
+  if (!key.startsWith('sb_')) headers['Authorization'] = `Bearer ${key}`;
   async function request(path: string, method = 'GET', body?: unknown) {
-    const response = await fetch(`${url}/rest/v1/${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    const response = await fetch(`${url}/rest/v1/${path}`, { method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     const result = await response.json();
     assert.equal(response.ok, true, JSON.stringify(result));
     return result;
