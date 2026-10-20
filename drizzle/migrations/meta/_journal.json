@@ -36,6 +36,13 @@
       "when": 1792372105520,
       "tag": "0004_revoke_follow_up_links_on_recipient_change",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792458635441,
+      "tag": "0005_fix_follow_up_recipient_trigger",
+      "breakpoints": true
     }
   ]
 }
