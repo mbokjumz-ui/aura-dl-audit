@@ -43,6 +43,13 @@
       "when": 1792458635441,
       "tag": "0005_fix_follow_up_recipient_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792459921976,
+      "tag": "0006_create_stock_opname",
+      "breakpoints": true
     }
   ]
 }

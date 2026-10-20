@@ -607,6 +607,84 @@ export type Database = {
           },
         ]
       }
+      stock_opname_items: {
+        Row: {
+          actual_quantity: number | null
+          created_at: string
+          description: string
+          id: string
+          parent_id: string | null
+          quantity: number
+          rab_id: string
+          sort_order: number
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          actual_quantity?: number | null
+          created_at?: string
+          description: string
+          id?: string
+          parent_id?: string | null
+          quantity?: number
+          rab_id: string
+          sort_order?: number
+          unit?: string
+          unit_price?: number
+        }
+        Update: {
+          actual_quantity?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          parent_id?: string | null
+          quantity?: number
+          rab_id?: string
+          sort_order?: number
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_opname_items_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_opname_items_rab_id_fkey"
+            columns: ["rab_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_opname_projects: {
+        Row: {
+          created_at: string
+          disposition_number: string
+          division_location: string
+          id: string
+          project_name: string
+        }
+        Insert: {
+          created_at?: string
+          disposition_number?: string
+          division_location?: string
+          id?: string
+          project_name: string
+        }
+        Update: {
+          created_at?: string
+          disposition_number?: string
+          division_location?: string
+          id?: string
+          project_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
