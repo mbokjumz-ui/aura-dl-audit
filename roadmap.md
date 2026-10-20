@@ -13,4 +13,4 @@
 - [x] Tambahkan link auditee privat, pembaruan keterangan/bukti, dan tinjauan auditor.
 - [ ] Aktifkan notifikasi email penanggung jawab dan pelaksana — menunggu domain pengirim milik pengguna; lanjutkan template dan pemicu pengiriman setelah domain diatur.
 - [x] Uji alur tindak lanjut dan keamanan akses.
-- [ ] Perbaiki kegagalan penyimpanan tanggapan auditee dan uji kiriman serta bukti hingga terbaca kembali.
+- [x] Perbaiki kegagalan penyimpanan tanggapan auditee dan uji kiriman serta bukti hingga terbaca kembali.
