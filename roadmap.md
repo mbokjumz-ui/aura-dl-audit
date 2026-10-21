@@ -14,3 +14,4 @@
 - [ ] Aktifkan notifikasi email penanggung jawab dan pelaksana — menunggu domain pengirim milik pengguna; lanjutkan template dan pemicu pengiriman setelah domain diatur.
 - [x] Uji alur tindak lanjut dan keamanan akses.
 - [x] Perbaiki kegagalan penyimpanan tanggapan auditee dan uji kiriman serta bukti hingga terbaca kembali.
+- [x] Tambahkan Stock Opname Proyek: RAB dua level, total, dan pencocokan hasil opname.
