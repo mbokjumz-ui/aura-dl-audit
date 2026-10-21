@@ -18,6 +18,7 @@ import { Route as AuthenticatedArsipIsoRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
+import { Route as AuthenticatedStockOpnameRouteImport } from './routes/_authenticated/stock-opname'
 import { Route as AuthenticatedTindakLanjutRouteImport } from './routes/_authenticated/tindak-lanjut'
 import { Route as AuthenticatedProyekIndexRouteImport } from './routes/_authenticated/proyek.index'
 import { Route as AuthenticatedProyekProjectIdRouteImport } from './routes/_authenticated/proyek.$projectId'
@@ -67,6 +68,12 @@ const AuthenticatedProyekRouteRoute =
     path: '/proyek',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStockOpnameRoute =
+  AuthenticatedStockOpnameRouteImport.update({
+    id: '/stock-opname',
+    path: '/stock-opname',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTindakLanjutRoute =
   AuthenticatedTindakLanjutRouteImport.update({
     id: '/tindak-lanjut',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/proyek/': typeof AuthenticatedProyekIndexRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/proyek': typeof AuthenticatedProyekIndexRoute
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/_authenticated/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
   '/_authenticated/proyek/': typeof AuthenticatedProyekIndexRoute
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/stock-opname'
     | '/tindak-lanjut'
     | '/proyek/$projectId'
     | '/proyek/'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/stock-opname'
     | '/tindak-lanjut'
     | '/proyek/$projectId'
     | '/proyek'
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/arsip-iso'
     | '/_authenticated/auditor'
     | '/_authenticated/dashboard'
+    | '/_authenticated/stock-opname'
     | '/_authenticated/tindak-lanjut'
     | '/_authenticated/proyek/$projectId'
     | '/_authenticated/proyek/'
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProyekRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stock-opname': {
+      id: '/_authenticated/stock-opname'
+      path: '/stock-opname'
+      fullPath: '/stock-opname'
+      preLoaderRoute: typeof AuthenticatedStockOpnameRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tindak-lanjut': {
       id: '/_authenticated/tindak-lanjut'
       path: '/tindak-lanjut'
@@ -286,6 +306,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArsipIsoRoute: typeof AuthenticatedArsipIsoRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedStockOpnameRoute: typeof AuthenticatedStockOpnameRoute
   AuthenticatedTindakLanjutRoute: typeof AuthenticatedTindakLanjutRoute
 }
 
@@ -295,6 +316,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArsipIsoRoute: AuthenticatedArsipIsoRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedStockOpnameRoute: AuthenticatedStockOpnameRoute,
   AuthenticatedTindakLanjutRoute: AuthenticatedTindakLanjutRoute,
 }
 

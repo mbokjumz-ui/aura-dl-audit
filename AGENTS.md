@@ -20,3 +20,4 @@
 - Auditee access uses expiring, revocable capability links with only token hashes persisted and server-validated project/item scopes; keep privileged access resolution in a server-only module.
 - Keep follow-up evidence private and submissions append-only; commit evidence metadata and submitted status atomically, requiring auditor review before approval.
 - In shared follow-up recipient triggers, branch on the table before reading its specific fields; status updates must preserve access links and never read columns belonging to another table.
+- Stock opname RAB items are two-level (parent_id, enforced by trigger); only leaf rows carry quantity/price so totals never double count.

@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users, FileCheck2, ListChecks } from "lucide-react";
+import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users, FileCheck2, ListChecks, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: "/arsip", label: "Arsip", icon: Archive },
   { to: "/arsip-iso", label: "Arsip ISO", icon: FileCheck2 },
   { to: "/tindak-lanjut", label: "Tindak Lanjut", icon: ListChecks },
+  { to: "/stock-opname", label: "Stock Opname", icon: Calculator },
 ] as const;
 
 export function AppShell() {
