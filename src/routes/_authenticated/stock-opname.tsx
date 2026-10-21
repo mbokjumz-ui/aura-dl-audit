@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight, Paperclip, FileDown, CheckCircle2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { groupAmount, lineAmount, rabTotals, rabTree, rupiah, type OpnameItem } from "@/lib/stock-opname";
+import { groupAmount, lineAmount, rabTotals, numberedRabRows, opnameCompletion, rupiah, type OpnameItem } from "@/lib/stock-opname";
+import { ArchiveDocuments } from "@/components/ArchiveDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/stock-opname")({
   component: StockOpnamePage,
 });
 
-type Header = { project_name: string; division_location: string; disposition_number: string };
+type Header = { project_name: string; division_location: string; disposition_number: string; responsible_name: string; auditor_name: string };
 
 function StockOpnamePage() {
   const client = useQueryClient();
@@ -34,7 +35,7 @@ function StockOpnamePage() {
   }});
   const saveHeader = useMutation({ mutationFn: async (f: Header & { id?: string }) => {
     if (!f.project_name.trim()) throw new Error("Nama proyek wajib diisi.");
-    const values = { project_name: f.project_name.trim(), division_location: f.division_location.trim(), disposition_number: f.disposition_number.trim() };
+    const values = { project_name: f.project_name.trim(), division_location: f.division_location.trim(), disposition_number: f.disposition_number.trim(), responsible_name: f.responsible_name.trim(), auditor_name: f.auditor_name.trim() };
     const r = f.id ? await supabase.from("stock_opname_projects").update(values).eq("id", f.id).select().single()
       : await supabase.from("stock_opname_projects").insert(values).select().single();
     if (r.error) throw r.error;
@@ -47,14 +48,14 @@ function StockOpnamePage() {
     {active ? <RabDetail rab={active} items={active.stock_opname_items as OpnameItem[]} onBack={() => setSelected(undefined)} onEdit={() => setHeaderForm({ ...active })} />
     : <>
       <div className="mb-7 flex items-center justify-between gap-3"><h1 className="font-display text-3xl md:text-4xl">Stock Opname Proyek</h1>
-        <Button onClick={() => setHeaderForm({ project_name: "", division_location: "", disposition_number: "" })}><Plus />Buat RAB</Button></div>
+        <Button onClick={() => setHeaderForm({ project_name: "", division_location: "", disposition_number: "", responsible_name: "", auditor_name: "" })}><Plus />Buat RAB</Button></div>
       {list.isLoading ? <p className="text-muted-foreground">Memuat…</p> : !list.data?.length ? <p className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">Belum ada RAB. Mulai dengan membuat RAB proyek.</p> :
       <div className="grid gap-3 md:grid-cols-2">{list.data.map(p => { const t = rabTotals(p.stock_opname_items as OpnameItem[]); return (
-        <button key={p.id} onClick={() => setSelected(p.id)} className="rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-primary">
-          <p className="font-medium">{p.project_name}</p>
+         <Button variant="outline" key={p.id} onClick={() => setSelected(p.id)} className="h-auto min-w-0 flex-col items-stretch whitespace-normal rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary">
+           <div className="flex items-start justify-between gap-3"><p className="break-words font-medium">{p.project_name}</p><span className="shrink-0 text-xs text-primary">{p.status === "selesai" ? "Selesai" : "Berjalan"}</span></div>
           <p className="mt-1 text-xs text-muted-foreground">{p.division_location || "—"} · Disposisi {p.disposition_number || "—"}</p>
           <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(t.rab)}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
-        </button>); })}</div>}
+         </Button>); })}</div>}
     </>}
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
       <DialogContent><DialogHeader><DialogTitle>{headerForm?.id ? "Edit Header RAB" : "Buat RAB Proyek"}</DialogTitle></DialogHeader>
@@ -62,6 +63,8 @@ function StockOpnamePage() {
           <Field label="Nama proyek"><Input value={headerForm.project_name} onChange={e => setHeaderForm({ ...headerForm, project_name: e.target.value })} required /></Field>
           <Field label="Divisi / lokasi proyek"><Input value={headerForm.division_location} onChange={e => setHeaderForm({ ...headerForm, division_location: e.target.value })} /></Field>
           <Field label="Nomor disposisi"><Input value={headerForm.disposition_number} onChange={e => setHeaderForm({ ...headerForm, disposition_number: e.target.value })} /></Field>
+           <Field label="Nama penanggung jawab project"><Input value={headerForm.responsible_name} onChange={e => setHeaderForm({ ...headerForm, responsible_name: e.target.value })} /></Field>
+           <Field label="Nama auditor stock opname"><Input value={headerForm.auditor_name} onChange={e => setHeaderForm({ ...headerForm, auditor_name: e.target.value })} /></Field>
           <Button type="submit" className="w-full" disabled={saveHeader.isPending}>Simpan</Button>
         </form>}
       </DialogContent>
@@ -75,12 +78,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 type ItemForm = { id?: string; parent_id: string | null; description: string; quantity: string; unit: string; unit_price: string };
 
-function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string } & Header; items: OpnameItem[]; onBack: () => void; onEdit: () => void }) {
+function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: string; completed_at: string | null } & Header; items: OpnameItem[]; onBack: () => void; onEdit: () => void }) {
   const client = useQueryClient();
   const [tab, setTab] = useState<"rab" | "opname">("rab");
   const [form, setForm] = useState<ItemForm | null>(null);
+  const [attachmentItem, setAttachmentItem] = useState<OpnameItem | null>(null);
+  const [exporting, setExporting] = useState(false);
   const refresh = () => client.invalidateQueries({ queryKey: ["stock-opname-projects"] });
-  const tree = rabTree(items);
+  const rows = numberedRabRows(items);
   const totals = rabTotals(items);
   const hasChildren = (id?: string) => !!id && items.some(i => i.parent_id === id);
 
@@ -91,22 +96,43 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string } & Heade
       : await supabase.from("stock_opname_items").insert({ ...values, sort_order: items.length });
     if (r.error) throw r.error;
   }, onSuccess: () => { refresh(); setForm(null); }, onError: e => toast.error(e.message) });
-  const removeItem = useMutation({ mutationFn: async (id: string) => { const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; }, onSuccess: refresh, onError: e => toast.error(e.message) });
-  const removeRab = useMutation({ mutationFn: async () => { const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
+  async function removeFiles(itemIds: string[]) {
+    if (!itemIds.length) return;
+    const { data, error } = await supabase.from("stock_opname_documents").select("file_path").in("item_id", itemIds);
+    if (error) throw error;
+    if (data.length) { const result = await supabase.storage.from("stock-opname-documents").remove(data.map(d => d.file_path)); if (result.error) throw result.error; }
+  }
+  const removeItem = useMutation({ mutationFn: async (id: string) => { await removeFiles(items.filter(i => i.id === id || i.parent_id === id).map(i => i.id)); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; }, onSuccess: refresh, onError: e => toast.error(e.message) });
+  const removeRab = useMutation({ mutationFn: async () => { await removeFiles(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
     const r = await supabase.from("stock_opname_items").update({ actual_quantity: value === "" ? null : Number(value) }).eq("id", id);
     if (r.error) throw r.error;
   }, onSuccess: refresh, onError: e => toast.error(e.message) });
+  const complete = useMutation({ mutationFn: async (done: boolean) => {
+    const { error } = await supabase.from("stock_opname_projects").update(opnameCompletion(done)).eq("id", rab.id);
+    if (error) throw error;
+  }, onSuccess: (_, done) => { refresh(); toast.success(done ? "Stock opname ditandai selesai" : "Stock opname dibuka kembali"); }, onError: e => toast.error(e.message) });
+  async function exportPdf() {
+    setExporting(true);
+    try {
+      const { data, error } = items.length ? await supabase.from("stock_opname_documents").select("item_id,file_name").in("item_id", items.map(i => i.id)) : { data: [], error: null };
+      if (error) throw error;
+      const { stockOpnamePdf } = await import("@/lib/stock-opname-pdf");
+      stockOpnamePdf(rab, items, data);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Laporan PDF gagal dibuat."); }
+    finally { setExporting(false); }
+  }
 
   const edit = (i: OpnameItem) => setForm({ id: i.id, parent_id: i.parent_id, description: i.description, quantity: String(i.quantity), unit: i.unit, unit_price: String(i.unit_price) });
   const diffClass = (d: number) => d < 0 ? "text-destructive" : d > 0 ? "text-primary" : "text-muted-foreground";
 
-  const row = (i: OpnameItem, level: number, group?: OpnameItem[]) => {
+  const row = (i: OpnameItem, number: string, level: number, group?: OpnameItem[]) => {
     const rabAmt = group ? groupAmount(group, "quantity") : lineAmount(i.quantity, i.unit_price);
     const actAmt = group ? groupAmount(group, "actual_quantity") : i.actual_quantity === null ? null : lineAmount(i.actual_quantity, i.unit_price);
     return <tr key={i.id} className={group ? "bg-muted/40 font-medium" : ""}>
-      <td className="p-2"><span className="flex items-start gap-1" style={{ paddingLeft: level * 16 }}>{level > 0 && <CornerDownRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />}{i.description}</span></td>
+      <td className="p-2 align-top tabular-nums">{number}</td>
+      <td className="p-2"><span className={`flex items-start gap-1 ${level > 0 ? "pl-4" : ""}`}>{level > 0 && <CornerDownRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />}{i.description}</span></td>
       <td className="p-2 text-right">{group ? "" : i.quantity.toLocaleString("id-ID")}</td>
       <td className="p-2">{group ? "" : i.unit}</td>
       <td className="p-2 text-right">{group ? "" : rupiah(i.unit_price)}</td>
@@ -119,6 +145,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string } & Heade
         <td className="p-2">{group ? "" : <Input aria-label={`Jumlah riil ${i.description}`} type="number" min="0" step="any" className="h-8 w-24 text-right" defaultValue={i.actual_quantity ?? ""} onBlur={e => { if (e.target.value !== String(i.actual_quantity ?? "")) saveActual.mutate({ id: i.id, value: e.target.value }); }} />}</td>
         <td className="p-2 text-right">{actAmt === null ? "—" : rupiah(actAmt)}</td>
         <td className={`p-2 text-right ${actAmt === null ? "" : diffClass(actAmt - rabAmt)}`}>{actAmt === null ? "—" : rupiah(actAmt - rabAmt)}</td>
+         <td className="p-2"><Button size="icon" variant="ghost" title="Lampiran dokumen atau foto" aria-label={`Lampiran ${number} ${i.description}`} onClick={() => setAttachmentItem(i)}><Paperclip /></Button></td>
       </>}
     </tr>;
   };
@@ -127,8 +154,16 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string } & Heade
     <Button variant="ghost" size="sm" onClick={onBack} className="mb-4"><ArrowLeft />Semua RAB</Button>
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div><h1 className="font-display text-3xl md:text-4xl">{rab.project_name}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Divisi/lokasi: {rab.division_location || "—"} · No. disposisi: {rab.disposition_number || "—"}</p></div>
-      <div className="flex gap-2"><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>
+        <p className="mt-1 text-sm text-muted-foreground">Divisi/lokasi: {rab.division_location || "—"} · No. disposisi: {rab.disposition_number || "—"}</p>
+        <p className="mt-1 text-sm text-muted-foreground">Penanggung jawab: {rab.responsible_name || "—"} · Auditor: {rab.auditor_name || "—"}</p>
+        <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>
+        <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
+        <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
+          const done = rab.status !== "selesai";
+          const message = done ? `Tandai stock opname selesai?${totals.counted < totals.total ? ` Masih ada ${totals.total - totals.counted} poin tanpa jumlah riil.` : ""}` : "Buka kembali stock opname ini?";
+          if (window.confirm(message)) complete.mutate(done);
+        }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>
         <Button variant="outline" onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button></div>
     </div>
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -146,20 +181,24 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string } & Heade
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-full min-w-[720px] text-sm">
         <thead className="border-b border-border text-left text-xs text-muted-foreground"><tr>
-          <th className="p-2">Uraian pengerjaan</th><th className="p-2 text-right">Jumlah</th><th className="p-2">Satuan</th><th className="p-2 text-right">Nilai</th><th className="p-2 text-right">Amount RAB</th>
-          {tab === "rab" ? <th /> : <><th className="p-2">Jumlah riil</th><th className="p-2 text-right">Amount opname</th><th className="p-2 text-right">Selisih</th></>}
+          <th className="p-2">No.</th><th className="p-2">Uraian pengerjaan</th><th className="p-2 text-right">Jumlah</th><th className="p-2">Satuan</th><th className="p-2 text-right">Nilai</th><th className="p-2 text-right">Amount RAB</th>
+          {tab === "rab" ? <th /> : <><th className="p-2">Jumlah riil</th><th className="p-2 text-right">Amount opname</th><th className="p-2 text-right">Selisih</th><th className="p-2">Lampiran</th></>}
         </tr></thead>
         <tbody className="divide-y divide-border">
-          {tree.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Belum ada poin pengerjaan.</td></tr>}
-          {tree.map(({ point, children }) => [row(point, 0, children.length ? children : undefined), ...children.map(c => row(c, 1))])}
+          {rows.length === 0 && <tr><td colSpan={tab === "rab" ? 7 : 10} className="p-6 text-center text-muted-foreground">Belum ada poin pengerjaan.</td></tr>}
+          {rows.map(({ item, number, level, children }) => row(item, number, level, children.length ? children : undefined))}
         </tbody>
         <tfoot className="border-t-2 border-border font-semibold"><tr>
-          <td className="p-2" colSpan={4}>Total</td><td className="p-2 text-right">{rupiah(totals.rab)}</td>
-          {tab === "rab" ? <td /> : <><td /><td className="p-2 text-right">{rupiah(totals.actual)}</td><td className={`p-2 text-right ${diffClass(totals.difference)}`}>{rupiah(totals.difference)}</td></>}
+          <td className="p-2" colSpan={5}>Total</td><td className="p-2 text-right">{rupiah(totals.rab)}</td>
+          {tab === "rab" ? <td /> : <><td /><td className="p-2 text-right">{rupiah(totals.actual)}</td><td className={`p-2 text-right ${diffClass(totals.difference)}`}>{rupiah(totals.difference)}</td><td /></>}
         </tr></tfoot>
       </table>
     </div>
-    {tab === "opname" && <p className="mt-2 text-xs text-muted-foreground">Isi jumlah riil lalu pindah kolom; tersimpan dan dicocokkan otomatis.</p>}
+    <Dialog open={!!attachmentItem} onOpenChange={o => !o && setAttachmentItem(null)}>
+      <DialogContent><DialogHeader><DialogTitle>Lampiran — {attachmentItem?.description}</DialogTitle></DialogHeader>
+        {attachmentItem && <ArchiveDocuments stockItemId={attachmentItem.id} />}
+      </DialogContent>
+    </Dialog>
     <Dialog open={!!form} onOpenChange={o => !o && setForm(null)}>
       <DialogContent><DialogHeader><DialogTitle>{form?.id ? "Edit" : "Tambah"} {form?.parent_id ? "Sub-poin" : "Poin"} Pengerjaan</DialogTitle></DialogHeader>
         {form && <form className="space-y-3" onSubmit={e => { e.preventDefault(); saveItem.mutate(form); }}>
