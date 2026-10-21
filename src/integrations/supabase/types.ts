@@ -607,6 +607,44 @@ export type Database = {
           },
         ]
       }
+      stock_opname_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          item_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          item_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_opname_documents_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_opname_items: {
         Row: {
           actual_quantity: number | null
@@ -663,25 +701,37 @@ export type Database = {
       }
       stock_opname_projects: {
         Row: {
+          auditor_name: string
+          completed_at: string | null
           created_at: string
           disposition_number: string
           division_location: string
           id: string
           project_name: string
+          responsible_name: string
+          status: string
         }
         Insert: {
+          auditor_name?: string
+          completed_at?: string | null
           created_at?: string
           disposition_number?: string
           division_location?: string
           id?: string
           project_name: string
+          responsible_name?: string
+          status?: string
         }
         Update: {
+          auditor_name?: string
+          completed_at?: string | null
           created_at?: string
           disposition_number?: string
           division_location?: string
           id?: string
           project_name?: string
+          responsible_name?: string
+          status?: string
         }
         Relationships: []
       }
