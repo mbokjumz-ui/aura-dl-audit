@@ -36,4 +36,15 @@ export function groupAmount(children: OpnameItem[], field: "quantity" | "actual_
   return children.reduce((s, c) => s + lineAmount(c[field] ?? 0, c.unit_price), 0);
 }
 
+export function numberedRabRows(items: OpnameItem[]) {
+  return rabTree(items).flatMap(({ point, children }, index) => [
+    { item: point, number: String(index + 1), children, level: 0 },
+    ...children.map((item, childIndex) => ({ item, number: `${index + 1}.${childIndex + 1}`, children: [] as OpnameItem[], level: 1 })),
+  ]);
+}
+
+export function opnameCompletion(done: boolean, now = new Date()) {
+  return { status: done ? "selesai" : "berjalan", completed_at: done ? now.toISOString() : null };
+}
+
 export const rupiah = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 2 }).format(n);

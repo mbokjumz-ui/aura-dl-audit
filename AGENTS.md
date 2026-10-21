@@ -21,3 +21,5 @@
 - Keep follow-up evidence private and submissions append-only; commit evidence metadata and submitted status atomically, requiring auditor review before approval.
 - In shared follow-up recipient triggers, branch on the table before reading its specific fields; status updates must preserve access links and never read columns belonging to another table.
 - Stock opname RAB items are two-level (parent_id, enforced by trigger); only leaf rows carry quantity/price so totals never double count.
+- Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.
+- Generate stock opname PDFs client-side from the same numbered rows and totals used on screen, including header snapshots, completion status, and attachment filenames; reports must not expose private storage URLs.
