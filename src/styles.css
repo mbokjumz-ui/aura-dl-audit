@@ -135,3 +135,14 @@
     font-family: var(--font-display);
   }
 }
+
+.document-preview { overflow-wrap: anywhere; }
+.document-preview p { margin-block: 0.75rem; }
+.document-preview h1, .document-preview h2, .document-preview h3 { font-weight: 700; margin-block: 1rem; }
+.document-preview h1 { font-size: 1.5rem; }
+.document-preview h2 { font-size: 1.25rem; }
+.document-preview ul { list-style: disc; padding-left: 1.5rem; }
+.document-preview ol { list-style: decimal; padding-left: 1.5rem; }
+.document-preview table { border-collapse: collapse; max-width: 100%; }
+.document-preview td, .document-preview th { border: 1px solid var(--border); padding: 0.5rem; }
+.document-preview img { max-width: 100%; height: auto; }
