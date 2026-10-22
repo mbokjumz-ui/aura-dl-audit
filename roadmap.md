@@ -15,6 +15,6 @@
 - [x] Uji alur tindak lanjut dan keamanan akses.
 - [x] Perbaiki kegagalan penyimpanan tanggapan auditee dan uji kiriman serta bukti hingga terbaca kembali.
 - [x] Tambahkan Stock Opname Proyek: RAB dua level, total, dan pencocokan hasil opname.
-- [ ] Tambahkan nomor poin dan nama penanggung jawab serta auditor pada Stock Opname.
-- [ ] Tambahkan lampiran dokumen/foto per poin, laporan PDF, dan status selesai.
-- [ ] Uji penyimpanan Stock Opname, lampiran, PDF, dan status selesai.
+- [x] Tambahkan nomor poin dan nama penanggung jawab serta auditor pada Stock Opname.
+- [x] Tambahkan lampiran dokumen/foto per poin, laporan PDF, dan status selesai.
+- [x] Uji penyimpanan Stock Opname, lampiran, PDF, dan status selesai.
