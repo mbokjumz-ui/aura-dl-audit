@@ -18,3 +18,5 @@
 - [x] Tambahkan nomor poin dan nama penanggung jawab serta auditor pada Stock Opname.
 - [x] Tambahkan lampiran dokumen/foto per poin, laporan PDF, dan status selesai.
 - [x] Uji penyimpanan Stock Opname, lampiran, PDF, dan status selesai.
+- [ ] Tambahkan pratinjau privat gambar, PDF, Word, dan Excel di semua lampiran.
+- [ ] Uji pratinjau lampiran dari data tersimpan dan unduhan tetap tersedia.
