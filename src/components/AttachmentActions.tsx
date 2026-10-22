@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { previewKind } from '@/lib/document-preview';
+import { PdfPreview } from '@/components/PdfPreview';
 
 type Sheet = { name: string; rows: string[][] };
 type Preview = { url?: string; html?: string; sheets?: Sheet[] };
@@ -83,7 +84,7 @@ function DocumentPreview({ name, getUrl }: { name: string; getUrl: (download: bo
   const sheet = preview.sheets?.[sheetIndex];
   return <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
     {kind === 'image' && <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-muted"><img src={preview.url} alt={name} className="max-h-full max-w-full object-contain" /></div>}
-    {kind === 'pdf' && <iframe title={`Pratinjau ${name}`} src={preview.url} className="min-h-0 w-full flex-1 border-0 bg-muted" />}
+    {kind === 'pdf' && preview.url && <PdfPreview url={preview.url} />}
     {kind === 'word' && <div className="document-preview min-h-0 flex-1 overflow-auto bg-card p-4 text-card-foreground sm:p-8" dangerouslySetInnerHTML={{ __html: preview.html ?? '' }} />}
     {kind === 'excel' && <>
       <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto" role="tablist" aria-label="Lembar Excel">{preview.sheets?.map((s, index) => <Button key={s.name} size="sm" variant={index === sheetIndex ? 'default' : 'outline'} role="tab" aria-selected={index === sheetIndex} onClick={() => setSheetIndex(index)}>{s.name}</Button>)}</div>
