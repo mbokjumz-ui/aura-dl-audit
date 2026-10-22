@@ -9,7 +9,6 @@ import {
   Circle,
   Plus,
   FileText,
-  Download,
   Upload,
   Trash2,
   UserPlus,
@@ -29,6 +28,8 @@ import {
 } from "@/lib/audit";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { AttachmentActions } from "@/components/AttachmentActions";
+import { privateDocumentUrl } from "@/lib/document-preview";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -273,12 +274,6 @@ function ProyekDetail() {
     },
     onError: (e) => toast.error(e.message),
   });
-
-  const openDocument = async (document: StageDocument) => {
-    const { data, error } = await supabase.storage.from("audit-documents").createSignedUrl(document.file_path, 60, { download: document.file_name });
-    if (error) { toast.error(error.message); return; }
-    window.location.assign(data.signedUrl);
-  };
 
   const inputCls =
     "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
@@ -533,7 +528,7 @@ function ProyekDetail() {
                           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="min-w-0 flex-1 truncate" title={document.file_name}>{document.file_name}</span>
                           <span className="shrink-0 text-xs text-muted-foreground">{(document.file_size / 1024 / 1024).toFixed(1)} MB</span>
-                          <Button size="icon" variant="ghost" title="Unduh dokumen" aria-label={`Unduh ${document.file_name}`} onClick={() => openDocument(document)}><Download /></Button>
+                          <AttachmentActions name={document.file_name} getUrl={download => privateDocumentUrl("audit-documents", document.file_path, document.file_name, download)} />
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button size="icon" variant="ghost" title="Hapus dokumen" aria-label={`Hapus ${document.file_name}`}><Trash2 className="text-destructive" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>

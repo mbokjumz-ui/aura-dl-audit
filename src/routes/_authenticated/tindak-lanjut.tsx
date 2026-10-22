@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Plus, ArrowLeft, ChevronRight, Link as LinkIcon, Download, Check, RotateCcw, Pencil } from 'lucide-react';
+import { Plus, ArrowLeft, ChevronRight, Link as LinkIcon, Check, RotateCcw, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FOLLOW_UP_STATUS, FOLLOW_UP_BUCKET, canReview, eligibleProject, type FollowUpStatus } from '@/lib/follow-up';
 import { createFollowUpLink, reviewFollowUp } from '@/lib/follow-up.functions';
 import { formatDate } from '@/lib/audit';
+import { AttachmentActions } from '@/components/AttachmentActions';
+import { privateDocumentUrl } from '@/lib/document-preview';
 
 export const Route = createFileRoute('/_authenticated/tindak-lanjut')({ head: () => ({ meta: [
   { title: 'Tindak Lanjut — AURA' }, { name: 'description', content: 'Penugasan, bukti pelaksanaan, dan tinjauan tindak lanjut hasil audit di AURA.' },
@@ -61,7 +63,6 @@ function FollowUpPage() {
     return { url: `${window.location.origin}/auditee#token=${result.token}`, recipient: item ? `${item.executor_name} (${item.executor_email})` : `${active.responsible_name} (${active.responsible_email})`, expiresAt: result.expiresAt };
   }, onSuccess: setGeneratedLink, onError: e => toast.error(e.message) });
   const reviewItem = useMutation({ mutationFn: (data: { itemId: string; decision: 'approved' | 'revision'; note: string }) => review({ data }), onSuccess: () => { refresh(); toast.success('Tinjauan disimpan'); }, onError: e => toast.error(e.message) });
-  async function openDoc(path: string, name: string) { const r = await supabase.storage.from(FOLLOW_UP_BUCKET).createSignedUrl(path,60,{ download: name }); if(r.error) toast.error('Bukti tidak dapat dibuka'); else window.open(r.data.signedUrl,'_blank','noopener,noreferrer'); }
   const items = itemsQuery.data ?? [];
   return <div>
     <div className="mb-7 flex flex-wrap items-center justify-between gap-3"><h1 className="font-display text-3xl md:text-4xl">Tindak Lanjut</h1><Button onClick={() => { if(active) { setItemForm(emptyItem); setEditingItem(undefined); setDialog('item'); } else { setProjectForm(emptyProject); setEditingProject(false); setDialog('project'); } }}><Plus />{active ? 'Tambah Poin' : 'Tambah Project'}</Button></div>
@@ -74,7 +75,7 @@ function FollowUpPage() {
         <div className="flex flex-wrap items-start justify-between gap-3"><h3 className="min-w-0 break-words text-lg font-semibold">{item.title}</h3><span className="text-sm font-medium text-primary">{FOLLOW_UP_STATUS[item.status as FollowUpStatus]}</span></div><p className="mt-3 whitespace-pre-wrap break-words text-sm">{item.description}</p>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 text-sm"><p>Pelaksana: {item.executor_name}</p><p className="break-all text-muted-foreground">{item.executor_email}</p><p className="mt-1 text-muted-foreground">Target: {formatDate(item.due_date)}</p></div><div className="flex gap-2">{item.status === 'pending' && <Button variant="outline" size="icon" title="Edit poin" aria-label="Edit poin" onClick={() => { setEditingItem(item.id); setItemForm({ title: item.title, description: item.description, name: item.executor_name, email: item.executor_email, due: item.due_date ?? '' }); setDialog('item'); }}><Pencil /></Button>}<Button variant="outline" disabled={links.isPending} onClick={() => links.mutate(item.id)}><LinkIcon />Link Pelaksana</Button></div></div>
         {item.review_note && <p className="mt-4 whitespace-pre-wrap break-words border-l-2 border-primary pl-3 text-sm">Catatan auditor: {item.review_note}</p>}
-        {[...item.follow_up_submissions].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(s => <section key={s.id} className="mt-5 border-t border-border pt-4"><p className="text-xs text-muted-foreground">{formatDate(s.created_at.slice(0,10))} · {s.author_role === 'responsible' ? 'Penanggung jawab' : 'Pelaksana'}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm">{s.description}</p>{s.follow_up_documents.map(d => <Button key={d.id} variant="ghost" className="mt-2 h-auto max-w-full justify-start" onClick={() => openDoc(d.file_path,d.file_name)}><Download className="shrink-0" /><span className="whitespace-normal break-all">{d.file_name}</span></Button>)}</section>)}
+        {[...item.follow_up_submissions].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(s => <section key={s.id} className="mt-5 border-t border-border pt-4"><p className="text-xs text-muted-foreground">{formatDate(s.created_at.slice(0,10))} · {s.author_role === 'responsible' ? 'Penanggung jawab' : 'Pelaksana'}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm">{s.description}</p>{s.follow_up_documents.map(d => <div key={d.id} className="mt-2 flex items-center gap-2"><span className="min-w-0 flex-1 break-all text-sm">{d.file_name}</span><AttachmentActions name={d.file_name} getUrl={download => privateDocumentUrl(FOLLOW_UP_BUCKET, d.file_path, d.file_name, download)} /></div>)}</section>)}
         {canReview(item.status) && <section className="mt-5 border-t border-border pt-4"><label className="block text-sm font-medium">Catatan tinjauan<Textarea className="mt-2" maxLength={10000} value={notes[item.id] ?? ''} onChange={e => setNotes({ ...notes, [item.id]: e.target.value })} /></label><div className="mt-3 flex flex-wrap gap-2"><Button disabled={reviewItem.isPending} onClick={() => reviewItem.mutate({ itemId: item.id, decision: 'approved', note: notes[item.id] ?? '' })}><Check />Setujui Selesai</Button><Button variant="outline" disabled={reviewItem.isPending} onClick={() => reviewItem.mutate({ itemId: item.id, decision: 'revision', note: notes[item.id] ?? '' })}><RotateCcw />Minta Perbaikan</Button></div></section>}
       </article>)}
       {!itemsQuery.isPending && !items.length && <p className="py-10 text-center text-muted-foreground">Belum ada poin tindak lanjut.</p>}

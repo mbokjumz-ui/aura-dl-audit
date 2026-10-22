@@ -69,14 +69,14 @@ export const submitAuditeeFollowUp = createServerFn({ method: 'POST' })
     } catch (error) { if (docs.length) await db.storage.from(FOLLOW_UP_BUCKET).remove(docs.map(d => d.file_path)); throw error; }
   });
 
-export const downloadAuditeeEvidence = createServerFn({ method: 'POST' }).inputValidator(z.object({ token: tokenSchema, documentId: idSchema }))
+export const downloadAuditeeEvidence = createServerFn({ method: 'POST' }).inputValidator(z.object({ token: tokenSchema, documentId: idSchema, download: z.boolean().default(true) }))
   .handler(async ({ data }) => {
     const { resolveAccess } = await import('./follow-up-access.server');
     const { access, db } = await resolveAccess(data.token);
     const doc = await db.from('follow_up_documents').select('file_path, file_name, follow_up_submissions!inner(follow_up_items!inner(id, follow_up_project_id))').eq('id', data.documentId).single();
     const item = doc.data?.follow_up_submissions.follow_up_items;
     if (!doc.data || !item || !accessAllows(access, item)) throw new Error('Bukti tidak dapat diakses.');
-    const url = await db.storage.from(FOLLOW_UP_BUCKET).createSignedUrl(doc.data.file_path, 60, { download: doc.data.file_name });
+    const url = await db.storage.from(FOLLOW_UP_BUCKET).createSignedUrl(doc.data.file_path, 60, data.download ? { download: doc.data.file_name } : undefined);
     if (url.error) throw new Error('Bukti tidak dapat dibuka.');
     return { url: url.data.signedUrl };
   });
