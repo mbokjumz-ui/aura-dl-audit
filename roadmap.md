@@ -20,3 +20,4 @@
 - [x] Uji penyimpanan Stock Opname, lampiran, PDF, dan status selesai.
 - [ ] Tambahkan pratinjau privat gambar, PDF, Word, dan Excel di semua lampiran.
 - [ ] Uji pratinjau lampiran dari data tersimpan dan unduhan tetap tersedia.
+- [ ] Jadikan lihat lampiran standar di semua menu dan tambahan fungsi mendatang.
