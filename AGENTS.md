@@ -15,6 +15,7 @@
 - Store optional auditor WhatsApp numbers on auditors.whatsapp_number so contact details stay attached to each auditor record.
 - Store archive findings independently of operational projects using a project identity and name snapshot; deleting a project must not erase retained audit results.
 - Keep archive attachments in private archive-documents storage with archive_documents metadata linked to findings; authenticated internal users share archive access like existing audit records.
+- Complete audit projects through the authenticated archive function: copy every stage attachment to independent private archive storage with source identities for retry deduplication, then validate all metadata before committing completed status; never move or delete originals during archival.
 - Store ISO objects separately from audit findings, with cascade-linked iso_documents in private iso-documents storage; reuse ArchiveDocuments through explicit typed owner props to keep upload and access behavior consistent across archives.
 - Store follow-up responsibility per completed project and executors per item; preserve project-name snapshots so retained follow-ups survive operational project deletion.
 - Auditee access uses expiring, revocable capability links with only token hashes persisted and server-validated project/item scopes; keep privileged access resolution in a server-only module.

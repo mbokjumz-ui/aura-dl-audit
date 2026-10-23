@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { completeProjectWithArchive } from "@/lib/project-archive.functions";
 import {
   ArrowLeft,
   CalendarDays,
@@ -65,6 +67,7 @@ function ProyekDetail() {
   const { projectId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const completeProject = useServerFn(completeProjectWithArchive);
   const [newTaskFor, setNewTaskFor] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState({ title: "", due_date: "", auditor_id: "" });
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -213,10 +216,17 @@ function ProyekDetail() {
 
   const toggleStatus = useMutation({
     mutationFn: async (status: string) => {
+      if (status === "selesai") return completeProject({ data: { projectId } });
       const { error } = await supabase.from("projects").update({ status }).eq("id", projectId);
       if (error) throw error;
     },
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["archive-findings"] });
+      queryClient.invalidateQueries({ queryKey: ["archive-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["follow-up-available-projects"] });
+      toast.success(result ? `Project selesai. ${result.archivedCount} lampiran tersimpan di Arsip.` : "Project dibuka kembali");
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -310,13 +320,13 @@ function ProyekDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant={project.status === "selesai" ? "outline" : "default"}
-            disabled={toggleStatus.isPending}
+            disabled={toggleStatus.isPending || uploadDocument.isPending || removeDocument.isPending}
             onClick={() => toggleStatus.mutate(project.status === "selesai" ? "berjalan" : "selesai")}>
-            {project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
+            {toggleStatus.isPending ? "Menyimpan…" : project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus project"><Trash2 /> Hapus Project</Button>
+              <Button variant="outline" disabled={toggleStatus.isPending || documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus project"><Trash2 /> Hapus Project</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
