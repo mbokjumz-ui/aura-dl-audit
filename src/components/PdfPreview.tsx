@@ -16,7 +16,7 @@ export function PdfPreview({ url }: { url: string }) {
     let destroy: (() => void) | undefined;
     async function load() {
       try {
-        const [PDF, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
+        const [PDF, worker] = await Promise.all([import('pdfjs-dist/legacy/build/pdf.mjs'), import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')]);
         if (cancelled) return;
         PDF.GlobalWorkerOptions.workerSrc = worker.default;
         const task = PDF.getDocument({ url });
@@ -53,7 +53,7 @@ export function PdfPreview({ url }: { url: string }) {
         cancelRender = () => task.cancel();
         await task.promise;
         if (!cancelled) setLoading(false);
-      } catch (e) { if (!cancelled) { console.error('PDF render failed', e); setError('Halaman PDF tidak dapat ditampilkan.'); setLoading(false); } }
+      } catch { if (!cancelled) { setError('Halaman PDF tidak dapat ditampilkan.'); setLoading(false); } }
     }
     void render();
     return () => { cancelled = true; cancelRender?.(); };
