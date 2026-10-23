@@ -57,6 +57,13 @@
       "when": 1792555261428,
       "tag": "0007_extend_stock_opname_reporting",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792773324304,
+      "tag": "0008_automatic_project_document_archive",
+      "breakpoints": true
     }
   ]
 }

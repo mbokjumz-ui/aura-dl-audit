@@ -23,6 +23,7 @@ export type Database = {
           file_size: number
           finding_id: string
           id: string
+          source_document_id: string | null
         }
         Insert: {
           content_type: string
@@ -32,6 +33,7 @@ export type Database = {
           file_size: number
           finding_id: string
           id?: string
+          source_document_id?: string | null
         }
         Update: {
           content_type?: string
@@ -41,6 +43,7 @@ export type Database = {
           file_size?: number
           finding_id?: string
           id?: string
+          source_document_id?: string | null
         }
         Relationships: [
           {
@@ -62,6 +65,7 @@ export type Database = {
           id: string
           project_key: string
           project_name: string
+          source_project_id: string | null
           title: string
         }
         Insert: {
@@ -73,6 +77,7 @@ export type Database = {
           id?: string
           project_key: string
           project_name: string
+          source_project_id?: string | null
           title: string
         }
         Update: {
@@ -84,6 +89,7 @@ export type Database = {
           id?: string
           project_key?: string
           project_name?: string
+          source_project_id?: string | null
           title?: string
         }
         Relationships: []
@@ -740,6 +746,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finish_archived_project: {
+        Args: { _finding_id: string; _project_id: string }
+        Returns: undefined
+      }
       submit_follow_up: {
         Args: {
           _access_id: string
