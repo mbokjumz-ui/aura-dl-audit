@@ -219,6 +219,7 @@ function ProyekDetail() {
       if (status === "selesai") return completeProject({ data: { projectId } });
       const { error } = await supabase.from("projects").update({ status }).eq("id", projectId);
       if (error) throw error;
+      return null;
     },
     onSuccess: (result) => {
       invalidate();
