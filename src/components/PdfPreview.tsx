@@ -19,7 +19,7 @@ export function PdfPreview({ url }: { url: string }) {
         const [PDF, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
         if (cancelled) return;
         PDF.GlobalWorkerOptions.workerSrc = worker.default;
-        const task = PDF.getDocument({ url, isEvalSupported: false });
+        const task = PDF.getDocument({ url });
         destroy = () => { void task.destroy(); };
         const document = await task.promise;
         if (!cancelled) setPdf(document);
