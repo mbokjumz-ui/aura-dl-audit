@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { completeProjectWithArchive } from "@/lib/project-archive.functions";
 import {
   ArrowLeft,
   CalendarDays,
@@ -65,6 +67,7 @@ function ProyekDetail() {
   const { projectId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const completeProject = useServerFn(completeProjectWithArchive);
   const [newTaskFor, setNewTaskFor] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState({ title: "", due_date: "", auditor_id: "" });
   const [selectedAuditors, setSelectedAuditors] = useState<string[]>([]);
@@ -213,10 +216,18 @@ function ProyekDetail() {
 
   const toggleStatus = useMutation({
     mutationFn: async (status: string) => {
+      if (status === "selesai") return completeProject({ data: { projectId } });
       const { error } = await supabase.from("projects").update({ status }).eq("id", projectId);
       if (error) throw error;
+      return null;
     },
-    onSuccess: invalidate,
+    onSuccess: (result) => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["archive-findings"] });
+      queryClient.invalidateQueries({ queryKey: ["archive-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["follow-up-available-projects"] });
+      toast.success(result ? `Project selesai. ${result.archivedCount} lampiran tersimpan di Arsip.` : "Project dibuka kembali");
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -310,13 +321,13 @@ function ProyekDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant={project.status === "selesai" ? "outline" : "default"}
-            disabled={toggleStatus.isPending}
+            disabled={toggleStatus.isPending || uploadDocument.isPending || removeDocument.isPending}
             onClick={() => toggleStatus.mutate(project.status === "selesai" ? "berjalan" : "selesai")}>
-            {project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
+            {toggleStatus.isPending ? "Menyimpan…" : project.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus project"><Trash2 /> Hapus Project</Button>
+              <Button variant="outline" disabled={toggleStatus.isPending || documentsLoading || !!documentsError || uploadDocument.isPending || removeDocument.isPending} className="text-destructive hover:text-destructive" aria-label="Hapus project"><Trash2 /> Hapus Project</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -512,10 +523,10 @@ function ProyekDetail() {
                   <div className="mt-5 border-t border-border pt-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <h4 className="flex items-center gap-2 text-sm font-semibold"><FileText className="h-4 w-4" /> Dokumen</h4>
-                      <Button size="sm" variant="outline" asChild className={uploadDocument.isPending ? "pointer-events-none opacity-50" : ""}>
+                      <Button size="sm" variant="outline" asChild className={uploadDocument.isPending || toggleStatus.isPending ? "pointer-events-none opacity-50" : ""}>
                         <label className="cursor-pointer">
                           <Upload className="h-4 w-4" /> {uploadDocument.isPending && uploadDocument.variables?.stageId === stage.id ? "Mengunggah…" : "Unggah Dokumen"}
-                          <input type="file" className="sr-only" disabled={uploadDocument.isPending}
+                          <input type="file" className="sr-only" disabled={uploadDocument.isPending || toggleStatus.isPending}
                             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                             onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadDocument.mutate({ stageId: stage.id, file }); e.target.value = ""; }} />
                         </label>
@@ -530,7 +541,7 @@ function ProyekDetail() {
                           <span className="shrink-0 text-xs text-muted-foreground">{(document.file_size / 1024 / 1024).toFixed(1)} MB</span>
                           <AttachmentActions name={document.file_name} getUrl={download => privateDocumentUrl("audit-documents", document.file_path, document.file_name, download)} />
                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" title="Hapus dokumen" aria-label={`Hapus ${document.file_name}`}><Trash2 className="text-destructive" /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button size="icon" variant="ghost" title="Hapus dokumen" disabled={toggleStatus.isPending} aria-label={`Hapus ${document.file_name}`}><Trash2 className="text-destructive" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader><AlertDialogTitle>Hapus dokumen?</AlertDialogTitle><AlertDialogDescription>“{document.file_name}” akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
                               <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => removeDocument.mutate(document)}>Hapus Dokumen</AlertDialogAction></AlertDialogFooter>
