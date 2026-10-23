@@ -53,7 +53,7 @@ export function PdfPreview({ url }: { url: string }) {
         cancelRender = () => task.cancel();
         await task.promise;
         if (!cancelled) setLoading(false);
-      } catch { if (!cancelled) { setError('Halaman PDF tidak dapat ditampilkan.'); setLoading(false); } }
+      } catch (e) { if (!cancelled) { console.error('PDF render failed', e); setError('Halaman PDF tidak dapat ditampilkan.'); setLoading(false); } }
     }
     void render();
     return () => { cancelled = true; cancelRender?.(); };
