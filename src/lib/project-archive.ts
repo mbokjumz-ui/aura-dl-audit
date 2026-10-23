@@ -10,7 +10,7 @@ export function automaticArchiveHeader(project: { id: string; name: string }, no
   return {
     archive_year: now.getUTCFullYear(), archive_month: now.getUTCMonth() + 1,
     project_key: project.id, project_name: project.name, source_project_id: project.id,
-    finding_number: `DOK-${project.id}`, title: `Dokumen Project — ${project.name}`,
+    finding_number: "DOK-PROJECT", title: `Dokumen Project — ${project.name}`,
     description: "Lampiran Project audit yang disalin otomatis saat Project selesai.",
   };
 }
