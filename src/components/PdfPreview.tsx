@@ -16,10 +16,10 @@ export function PdfPreview({ url }: { url: string }) {
     let destroy: (() => void) | undefined;
     async function load() {
       try {
-        const [PDF, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
+        const [PDF, worker] = await Promise.all([import('pdfjs-dist/legacy/build/pdf.mjs'), import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')]);
         if (cancelled) return;
         PDF.GlobalWorkerOptions.workerSrc = worker.default;
-        const task = PDF.getDocument({ url, isEvalSupported: false });
+        const task = PDF.getDocument({ url });
         destroy = () => { void task.destroy(); };
         const document = await task.promise;
         if (!cancelled) setPdf(document);
