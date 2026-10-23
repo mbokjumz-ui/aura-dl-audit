@@ -21,3 +21,5 @@
 - [x] Tambahkan pratinjau privat gambar, PDF, Word DOCX, dan Excel di semua lampiran; Word DOC lama tetap unduh.
 - [x] Uji pratinjau lampiran dari data tersimpan dan unduhan tetap tersedia.
 - [x] Jadikan lihat lampiran standar di semua menu dan tambahan fungsi mendatang.
+- [ ] Salin otomatis seluruh lampiran Project audit ke Arsip saat selesai, tanpa kehilangan file asli atau duplikasi.
+- [ ] Uji penyelesaian Project, arsip tersimpan, dan lampiran tetap tersedia setelah Project dihapus.
