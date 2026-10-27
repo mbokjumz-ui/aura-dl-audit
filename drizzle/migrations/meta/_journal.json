@@ -64,6 +64,13 @@
       "when": 1792773324304,
       "tag": "0008_automatic_project_document_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793083337846,
+      "tag": "0009_restrict_purchasing_access",
+      "breakpoints": true
     }
   ]
 }
