@@ -9,9 +9,11 @@ import { ArchiveDocuments } from "@/components/ArchiveDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { requireAuditPage } from "@/lib/access-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/arsip")({
+  beforeLoad: requireAuditPage,
   head: () => ({ meta: [
     { title: "Arsip Audit — AURA" },
     { name: "description", content: "Arsip hasil audit menurut tahun, bulan, project, dan nomor temuan." },

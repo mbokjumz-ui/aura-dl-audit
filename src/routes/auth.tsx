@@ -1,9 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ClipboardCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { readAppRole } from "@/lib/access-client";
+import { roleHome } from "@/lib/access";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -37,9 +40,7 @@ function AuthPage() {
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
-    });
+    readAppRole().then(role => { if (role) navigate({ to: roleHome(role), replace: true }); }).catch(() => toast.error("Hak akses gagal dimuat."));
   }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,7 +80,9 @@ function AuthPage() {
           throw error;
         }
       }
-      navigate({ to: "/dashboard" });
+      const role = await readAppRole();
+      if (!role) { toast.error("Akun belum memiliki hak akses. Hubungi Internal Audit."); return; }
+      navigate({ to: roleHome(role) });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
@@ -130,7 +133,9 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    const role = await readAppRole();
+    if (!role) { toast.error("Akun belum memiliki hak akses. Hubungi Internal Audit."); return; }
+    navigate({ to: roleHome(role) });
   }
 
   return (
@@ -236,6 +241,7 @@ function AuthPage() {
             {mode === "login" ? "Daftar" : "Masuk"}
           </button>
         </p>
+        <Button asChild variant="link" className="mt-2 w-full"><Link to="/login-pembelian">Masuk Tim Pembelian</Link></Button>
       </div>
     </div>
   );

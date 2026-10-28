@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ClipboardCheck, FolderKanban, ListChecks, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { readAppRole } from "@/lib/access-client";
+import { roleHome } from "@/lib/access";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,9 +31,7 @@ function Index() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
-    });
+    readAppRole().then(role => { if (role) navigate({ to: roleHome(role), replace: true }); }).catch(() => {});
   }, [navigate]);
 
   return (

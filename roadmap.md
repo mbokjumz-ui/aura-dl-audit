@@ -23,6 +23,6 @@
 - [x] Jadikan lihat lampiran standar di semua menu dan tambahan fungsi mendatang.
 - [x] Salin otomatis seluruh lampiran Project audit ke Arsip saat selesai, tanpa kehilangan file asli atau duplikasi.
 - [x] Uji penyelesaian Project, arsip tersimpan, dan lampiran tetap tersedia setelah Project dihapus.
-- [ ] Tambahkan login Pembelian dan pembuatan akun bernama oleh Internal Audit.
-- [ ] Batasi akses Pembelian ke Stock Opname dan lindungi angka riil hanya untuk Internal Audit.
-- [ ] Uji akses kedua peran dan pembatasan penyimpanan angka riil.
+- [x] Tambahkan login Pembelian dan pembuatan akun bernama oleh Internal Audit.
+- [x] Batasi akses Pembelian ke Stock Opname dan lindungi angka riil hanya untuk Internal Audit.
+- [x] Uji akses kedua peran dan pembatasan penyimpanan angka riil.

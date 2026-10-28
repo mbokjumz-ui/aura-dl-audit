@@ -9,6 +9,8 @@ const idSchema = z.string().uuid();
 export const createFollowUpLink = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
   .inputValidator(z.object({ projectId: idSchema, itemId: idSchema.nullable(), role: z.enum(['responsible', 'executor']) }))
   .handler(async ({ data, context }) => {
+    const role = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'internal_audit' });
+    if (role.error || !role.data) throw new Error('Hanya Internal Audit dapat membuat link tindak lanjut.');
     const project = await context.supabase.from('follow_up_projects').select('id').eq('id', data.projectId).single();
     if (project.error) throw new Error('Project tidak dapat diakses.');
     if ((data.role === 'responsible') !== (data.itemId === null)) throw new Error('Penerima link tidak sesuai.');

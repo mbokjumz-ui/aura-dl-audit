@@ -6,8 +6,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Auditor } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
+import { requireAuditPage } from "@/lib/access-client";
 
 export const Route = createFileRoute("/_authenticated/auditor")({
+  beforeLoad: requireAuditPage,
   head: () => ({
     meta: [
       { title: "Auditor — AURA" },
