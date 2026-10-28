@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuditeeRouteImport } from './routes/auditee'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LoginPembelianRouteImport } from './routes/login-pembelian'
+import { Route as AuthenticatedAkunPembelianRouteImport } from './routes/_authenticated/akun-pembelian'
 import { Route as AuthenticatedArsipRouteImport } from './routes/_authenticated/arsip'
 import { Route as AuthenticatedArsipIsoRouteImport } from './routes/_authenticated/arsip-iso'
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
@@ -42,6 +44,17 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginPembelianRoute = LoginPembelianRouteImport.update({
+  id: '/login-pembelian',
+  path: '/login-pembelian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAkunPembelianRoute =
+  AuthenticatedAkunPembelianRouteImport.update({
+    id: '/akun-pembelian',
+    path: '/akun-pembelian',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedArsipRoute = AuthenticatedArsipRouteImport.update({
   id: '/arsip',
   path: '/arsip',
@@ -97,7 +110,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
+  '/login-pembelian': typeof LoginPembelianRoute
   '/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
+  '/akun-pembelian': typeof AuthenticatedAkunPembelianRoute
   '/arsip': typeof AuthenticatedArsipRoute
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
@@ -111,6 +126,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
+  '/login-pembelian': typeof LoginPembelianRoute
+  '/akun-pembelian': typeof AuthenticatedAkunPembelianRoute
   '/arsip': typeof AuthenticatedArsipRoute
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
@@ -126,7 +143,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auditee': typeof AuditeeRoute
   '/auth': typeof AuthRoute
+  '/login-pembelian': typeof LoginPembelianRoute
   '/_authenticated/proyek': typeof AuthenticatedProyekRouteRouteWithChildren
+  '/_authenticated/akun-pembelian': typeof AuthenticatedAkunPembelianRoute
   '/_authenticated/arsip': typeof AuthenticatedArsipRoute
   '/_authenticated/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
@@ -142,7 +161,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auditee'
     | '/auth'
+    | '/login-pembelian'
     | '/proyek'
+    | '/akun-pembelian'
     | '/arsip'
     | '/arsip-iso'
     | '/auditor'
@@ -156,6 +177,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auditee'
     | '/auth'
+    | '/login-pembelian'
+    | '/akun-pembelian'
     | '/arsip'
     | '/arsip-iso'
     | '/auditor'
@@ -170,7 +193,9 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auditee'
     | '/auth'
+    | '/login-pembelian'
     | '/_authenticated/proyek'
+    | '/_authenticated/akun-pembelian'
     | '/_authenticated/arsip'
     | '/_authenticated/arsip-iso'
     | '/_authenticated/auditor'
@@ -186,6 +211,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuditeeRoute: typeof AuditeeRoute
   AuthRoute: typeof AuthRoute
+  LoginPembelianRoute: typeof LoginPembelianRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,6 +243,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/login-pembelian': {
+      id: '/login-pembelian'
+      path: '/login-pembelian'
+      fullPath: '/login-pembelian'
+      preLoaderRoute: typeof LoginPembelianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/akun-pembelian': {
+      id: '/_authenticated/akun-pembelian'
+      path: '/akun-pembelian'
+      fullPath: '/akun-pembelian'
+      preLoaderRoute: typeof AuthenticatedAkunPembelianRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/arsip': {
       id: '/_authenticated/arsip'
@@ -302,6 +342,7 @@ const AuthenticatedProyekRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedProyekRouteRoute: typeof AuthenticatedProyekRouteRouteWithChildren
+  AuthenticatedAkunPembelianRoute: typeof AuthenticatedAkunPembelianRoute
   AuthenticatedArsipRoute: typeof AuthenticatedArsipRoute
   AuthenticatedArsipIsoRoute: typeof AuthenticatedArsipIsoRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
@@ -312,6 +353,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProyekRouteRoute: AuthenticatedProyekRouteRouteWithChildren,
+  AuthenticatedAkunPembelianRoute: AuthenticatedAkunPembelianRoute,
   AuthenticatedArsipRoute: AuthenticatedArsipRoute,
   AuthenticatedArsipIsoRoute: AuthenticatedArsipIsoRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
@@ -328,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuditeeRoute: AuditeeRoute,
   AuthRoute: AuthRoute,
+  LoginPembelianRoute: LoginPembelianRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
