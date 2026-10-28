@@ -41,6 +41,6 @@ export const listPurchasingAccounts = createServerFn({ method: "GET" })
       const result = await supabaseAdmin.auth.admin.getUserById(row.user_id);
       if (result.error || !result.data.user) throw new Error("Daftar akun gagal dimuat.");
       const user = result.data.user;
-      return { id: user.id, fullName: String(user.user_metadata.full_name || ""), email: user.email || "", confirmed: !!user.email_confirmed_at };
+      return { id: user.id, fullName: String(user.user_metadata['full_name'] || ""), email: user.email || "", confirmed: !!user.email_confirmed_at };
     }));
   });

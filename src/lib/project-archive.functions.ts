@@ -8,6 +8,8 @@ export const completeProjectWithArchive = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ projectId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
+    const role = await db.rpc('has_role', { _user_id: context.userId, _role: 'internal_audit' });
+    if (role.error || !role.data) throw new Error('Hanya Internal Audit dapat menyelesaikan Project audit.');
     const project = await db.from('projects').select('id,name').eq('id', data.projectId).single();
     if (project.error) throw new Error('Project tidak dapat diakses.');
     const docs = await db.from('stage_documents').select('*,project_stages!inner(project_id)')
