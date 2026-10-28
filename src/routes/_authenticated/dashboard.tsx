@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, FolderKanban, ListChecks, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { requireAuditPage } from "@/lib/access-client";
 import {
   currentStage,
   formatDate,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/audit";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  beforeLoad: requireAuditPage,
   head: () => ({
     meta: [
       { title: "Dashboard — AURA" },

@@ -14,8 +14,9 @@ import { createFollowUpLink, reviewFollowUp } from '@/lib/follow-up.functions';
 import { formatDate } from '@/lib/audit';
 import { AttachmentActions } from '@/components/AttachmentActions';
 import { privateDocumentUrl } from '@/lib/document-preview';
+import { requireAuditPage } from '@/lib/access-client';
 
-export const Route = createFileRoute('/_authenticated/tindak-lanjut')({ head: () => ({ meta: [
+export const Route = createFileRoute('/_authenticated/tindak-lanjut')({ beforeLoad: requireAuditPage, head: () => ({ meta: [
   { title: 'Tindak Lanjut — AURA' }, { name: 'description', content: 'Penugasan, bukti pelaksanaan, dan tinjauan tindak lanjut hasil audit di AURA.' },
   { property: 'og:title', content: 'Tindak Lanjut — AURA' }, { property: 'og:description', content: 'Monitor tindak lanjut auditee dan tinjau bukti pelaksanaannya.' },
   { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary' },

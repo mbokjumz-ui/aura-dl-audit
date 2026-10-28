@@ -9,8 +9,11 @@ import { ArchiveDocuments } from "@/components/ArchiveDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { requireStockPage } from "@/lib/access-client";
+import { canEnterActual } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
+  beforeLoad: requireStockPage,
   head: () => ({ meta: [
     { title: "Stock Opname Proyek — AURA" },
     { name: "description", content: "Susun RAB proyek dan cocokkan dengan hasil stock opname di AURA." },
@@ -79,6 +82,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 type ItemForm = { id?: string; parent_id: string | null; description: string; quantity: string; unit: string; unit_price: string };
 
 function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: string; completed_at: string | null } & Header; items: OpnameItem[]; onBack: () => void; onEdit: () => void }) {
+  const { appRole } = Route.useRouteContext();
+  const canEditActual = canEnterActual(appRole);
   const client = useQueryClient();
   const [tab, setTab] = useState<"rab" | "opname">("rab");
   const [form, setForm] = useState<ItemForm | null>(null);
@@ -106,6 +111,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const removeRab = useMutation({ mutationFn: async () => { await removeFiles(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
+    if (!canEditActual) throw new Error("Hanya Internal Audit dapat mengisi jumlah riil.");
     const r = await supabase.from("stock_opname_items").update({ actual_quantity: value === "" ? null : Number(value) }).eq("id", id);
     if (r.error) throw r.error;
   }, onSuccess: refresh, onError: e => toast.error(e.message) });
@@ -140,9 +146,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       {tab === "rab" ? <td className="p-2"><div className="flex justify-end gap-1">
         {level === 0 && <Button size="icon" variant="ghost" aria-label="Tambah sub-poin" onClick={() => setForm({ parent_id: i.id, description: "", quantity: "", unit: "", unit_price: "" })}><Plus /></Button>}
         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => edit(i)}><Pencil /></Button>
-        <Button size="icon" variant="ghost" aria-label="Hapus" onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button></div></td>
+        <Button size="icon" variant="ghost" aria-label="Hapus" disabled={!canEditActual && (i.actual_quantity !== null || !!group?.some(child => child.actual_quantity !== null))} onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button></div></td>
       : <>
-        <td className="p-2">{group ? "" : <Input aria-label={`Jumlah riil ${i.description}`} type="number" min="0" step="any" className="h-8 w-24 text-right" defaultValue={i.actual_quantity ?? ""} onBlur={e => { if (e.target.value !== String(i.actual_quantity ?? "")) saveActual.mutate({ id: i.id, value: e.target.value }); }} />}</td>
+        <td className="p-2">{group ? "" : canEditActual ? <Input aria-label={`Jumlah riil ${i.description}`} type="number" min="0" step="any" className="h-8 w-24 text-right" defaultValue={i.actual_quantity ?? ""} onBlur={e => { if (e.target.value !== String(i.actual_quantity ?? "")) saveActual.mutate({ id: i.id, value: e.target.value }); }} /> : <span className="block text-right tabular-nums">{i.actual_quantity?.toLocaleString("id-ID") ?? "—"}</span>}</td>
         <td className="p-2 text-right">{actAmt === null ? "—" : rupiah(actAmt)}</td>
         <td className={`p-2 text-right ${actAmt === null ? "" : diffClass(actAmt - rabAmt)}`}>{actAmt === null ? "—" : rupiah(actAmt - rabAmt)}</td>
          <td className="p-2"><Button size="icon" variant="ghost" title="Lampiran dokumen atau foto" aria-label={`Lampiran ${number} ${i.description}`} onClick={() => setAttachmentItem(i)}><Paperclip /></Button></td>
@@ -159,12 +165,12 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>
         <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
-        <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
+        {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
           const done = rab.status !== "selesai";
           const message = done ? `Tandai stock opname selesai?${totals.counted < totals.total ? ` Masih ada ${totals.total - totals.counted} poin tanpa jumlah riil.` : ""}` : "Buka kembali stock opname ini?";
           if (window.confirm(message)) complete.mutate(done);
-        }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>
-        <Button variant="outline" onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button></div>
+        }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>}
+        <Button variant="outline" disabled={!canEditActual && items.some(item => item.actual_quantity !== null)} onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button></div>
     </div>
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
       <Stat label="Total RAB" value={rupiah(totals.rab)} />

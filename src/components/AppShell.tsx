@@ -3,6 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Archive, ClipboardCheck, FolderKanban, LayoutDashboard, LogOut, Users, FileCheck2, ListChecks, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { readAppRole } from "@/lib/access-client";
+import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -12,12 +15,15 @@ const NAV_ITEMS = [
   { to: "/arsip-iso", label: "Arsip ISO", icon: FileCheck2 },
   { to: "/tindak-lanjut", label: "Tindak Lanjut", icon: ListChecks },
   { to: "/stock-opname", label: "Stock Opname", icon: Calculator },
+  { to: "/akun-pembelian", label: "Akun Pembelian", icon: Users },
 ] as const;
 
 export function AppShell() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const role = useQuery({ queryKey: ["app-role"], queryFn: readAppRole });
+  const navItems = role.data === "internal_audit" ? NAV_ITEMS : role.data === "purchasing" ? NAV_ITEMS.filter(item => item.to === "/stock-opname") : [];
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -40,7 +46,7 @@ export function AppShell() {
           </div>
         </div>
         <nav className="mt-4 flex-1 space-y-1 px-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
             return (
               <Link
@@ -60,13 +66,13 @@ export function AppShell() {
           })}
         </nav>
         <div className="border-t border-sidebar-border p-3">
-          <button
+          <Button variant="ghost"
             onClick={handleSignOut}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
           >
             <LogOut className="h-4 w-4" />
             Keluar
-          </button>
+          </Button>
         </div>
       </aside>
 
@@ -80,7 +86,7 @@ export function AppShell() {
       {/* Bottom nav mobile */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
         <div className="flex overflow-x-auto">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
             return (
               <Link
@@ -96,13 +102,13 @@ export function AppShell() {
               </Link>
             );
           })}
-          <button
+          <Button variant="ghost"
             onClick={handleSignOut}
             className="flex min-w-16 flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium text-muted-foreground"
           >
             <LogOut className="h-5 w-5" />
             Keluar
-          </button>
+          </Button>
         </div>
       </nav>
     </div>

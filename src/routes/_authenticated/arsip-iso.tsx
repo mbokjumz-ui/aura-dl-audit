@@ -8,9 +8,11 @@ import { isoYearObjects, type IsoObject } from "@/lib/iso-archive";
 import { ArchiveDocuments } from "@/components/ArchiveDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { requireAuditPage } from "@/lib/access-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/arsip-iso")({
+  beforeLoad: requireAuditPage,
   head: () => ({ meta: [
     { title: "Arsip ISO — AURA" },
     { name: "description", content: "Arsip dokumen ISO berdasarkan tahun dan object ISO di AURA." },
