@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertPurchasingDeletionAllowed } from "./purchasing-accounts";
 
 export const createPurchasingAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -22,6 +23,21 @@ export const createPurchasingAccount = createServerFn({ method: "POST" })
       throw error;
     }
     return { id: userId };
+  });
+
+export const deletePurchasingAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ userId: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    const caller = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "internal_audit" });
+    if (caller.error || !caller.data) throw new Error("Hanya Internal Audit dapat menghapus akun Pembelian.");
+    const target = await context.supabase.from("user_roles").select("role").eq("user_id", data.userId);
+    if (target.error) throw new Error("Hak akses akun gagal diperiksa.");
+    assertPurchasingDeletionAllowed(context.userId, data.userId, caller.data, target.data.map(row => row.role));
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const deleted = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (deleted.error) throw new Error("Akun gagal dihapus. Silakan coba lagi.");
+    return { id: data.userId };
   });
 
 export const listPurchasingAccounts = createServerFn({ method: "GET" })
