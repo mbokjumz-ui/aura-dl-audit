@@ -13,7 +13,7 @@ export const createPurchasingAccount = createServerFn({ method: "POST" })
     const origin = request.headers.get("origin");
     if (!origin || new URL(data.origin).origin !== new URL(origin).origin) throw new Error("Alamat konfirmasi tidak valid.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const created = await supabaseAdmin.auth.admin.createUser({ email: data.email, password: data.password, email_confirm: false, user_metadata: { full_name: data.fullName } });
+    const created = await supabaseAdmin.auth.admin.createUser({ email: data.email, password: data.password, email_confirm: true, user_metadata: { full_name: data.fullName } });
     if (created.error || !created.data.user) throw new Error(created.error?.message || "Akun gagal dibuat.");
     const userId = created.data.user.id;
     try {
@@ -25,8 +25,7 @@ export const createPurchasingAccount = createServerFn({ method: "POST" })
       await supabaseAdmin.auth.admin.deleteUser(userId);
       throw error;
     }
-    const confirmation = await supabaseAdmin.auth.resend({ type: "signup", email: data.email, options: { emailRedirectTo: `${new URL(origin).origin}/login-pembelian` } });
-    return { id: userId, confirmationSent: !confirmation.error };
+    return { id: userId };
   });
 
 export const listPurchasingAccounts = createServerFn({ method: "GET" })
@@ -40,7 +39,11 @@ export const listPurchasingAccounts = createServerFn({ method: "GET" })
     return Promise.all(roles.data.map(async row => {
       const result = await supabaseAdmin.auth.admin.getUserById(row.user_id);
       if (result.error || !result.data.user) throw new Error("Daftar akun gagal dimuat.");
-      const user = result.data.user;
+      let user = result.data.user;
+      if (!user.email_confirmed_at) {
+        const activated = await supabaseAdmin.auth.admin.updateUserById(user.id, { email_confirm: true });
+        if (!activated.error && activated.data.user) user = activated.data.user;
+      }
       return { id: user.id, fullName: String(user.user_metadata['full_name'] || ""), email: user.email || "", confirmed: !!user.email_confirmed_at };
     }));
   });
