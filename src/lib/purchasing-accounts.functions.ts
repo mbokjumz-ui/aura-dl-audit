@@ -4,14 +4,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const createPurchasingAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ fullName: z.string().trim().min(1).max(150), email: z.string().trim().email(), password: z.string().min(8).max(128), origin: z.string().url() }))
+  .inputValidator(z.object({ fullName: z.string().trim().min(1).max(150), email: z.string().trim().email(), password: z.string().min(8).max(128), origin: z.string().optional() }))
   .handler(async ({ data, context }) => {
     const role = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "internal_audit" });
     if (role.error || !role.data) throw new Error("Hanya Internal Audit dapat membuat akun Pembelian.");
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const request = getRequest();
-    const origin = request.headers.get("origin");
-    if (!origin || new URL(data.origin).origin !== new URL(origin).origin) throw new Error("Alamat konfirmasi tidak valid.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const created = await supabaseAdmin.auth.admin.createUser({ email: data.email, password: data.password, email_confirm: true, user_metadata: { full_name: data.fullName } });
     if (created.error || !created.data.user) throw new Error(created.error?.message || "Akun gagal dibuat.");
