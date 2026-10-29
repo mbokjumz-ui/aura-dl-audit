@@ -27,4 +27,4 @@
 - Use shared AttachmentActions for private document previews: fetch short-lived signed files locally, sanitize Word content and render Excel as text, never send private URLs to external document viewers; preserve capability scope checks for auditee access.
 - Store access roles in protected user_roles; existing accounts are backfilled as internal audit and new accounts receive no role automatically, preventing public signup privilege escalation.
 - Guard audit pages by role beneath the managed authentication gate, enforce the same boundary with restrictive RLS on audit data/files, and protect actual opname values and completion through database triggers to prevent bypass via direct requests or cascades.
-- Create purchasing accounts only through an internal-audit-authorized server function; keep email confirmation enabled and profile names separate from roles.
+- Create purchasing accounts only through an internal-audit-authorized server function; admin-created purchasing accounts are confirmed immediately (internal audit vouches for them); keep profile names separate from roles.

@@ -28,10 +28,10 @@ function AccountsPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const accounts = useQuery({ queryKey: ["purchasing-accounts"], queryFn: () => list() });
-  const save = useMutation({ mutationFn: () => create({ data: { ...form, origin: window.location.origin } }), onSuccess: result => {
+  const save = useMutation({ mutationFn: () => create({ data: { ...form, origin: window.location.origin } }), onSuccess: () => {
     setOpen(false); setForm({ fullName: "", email: "", password: "" });
     client.invalidateQueries({ queryKey: ["purchasing-accounts"] });
-    toast.success(result.confirmationSent ? "Akun dibuat. Email konfirmasi telah dikirim." : "Akun dibuat. Email konfirmasi belum terkirim; gunakan Kirim ulang di halaman login Pembelian.");
+    toast.success("Akun dibuat dan langsung aktif.");
   }, onError: e => toast.error(e.message) });
   return <div>
     <div className="mb-7 flex flex-wrap items-center justify-between gap-3"><h1 className="font-display text-3xl md:text-4xl">Akun Pembelian</h1><Button onClick={() => setOpen(true)}><Plus />Tambah Akun</Button></div>
