@@ -78,6 +78,13 @@
       "when": 1793319966617,
       "tag": "0010_finalize_stock_opname_rab",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793320095521,
+      "tag": "0011_allow_privileged_rab_maintenance",
+      "breakpoints": true
     }
   ]
 }
