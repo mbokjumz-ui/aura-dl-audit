@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Internal Audit", async () => {
   const url = process.env['SUPABASE_URL'];
@@ -11,14 +11,14 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
   const users: string[] = [];
   let rabId: string | undefined;
   try {
-    const clients = [];
+    const clients: SupabaseClient[] = [];
     for (const role of ["internal_audit", "purchasing"]) {
       const email = `rab-final-${crypto.randomUUID()}@example.com`, password = crypto.randomUUID() + "aA1";
       const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
       assert.equal(created.error, null); assert.ok(created.data.user);
       users.push(created.data.user.id);
       assert.equal((await admin.from("user_roles").insert({ user_id: created.data.user.id, role })).error, null);
-      const client = createClient(url, pub, { auth: { persistSession: false } });
+      const client: SupabaseClient = createClient(url, pub, { auth: { persistSession: false } });
       assert.equal((await client.auth.signInWithPassword({ email, password })).error, null);
       clients.push(client);
     }
