@@ -71,6 +71,27 @@
       "when": 1793083337846,
       "tag": "0009_restrict_purchasing_access",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793319966617,
+      "tag": "0010_finalize_stock_opname_rab",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793320095521,
+      "tag": "0011_allow_privileged_rab_maintenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793320121127,
+      "tag": "0012_refine_privileged_rab_cleanup",
+      "breakpoints": true
     }
   ]
 }

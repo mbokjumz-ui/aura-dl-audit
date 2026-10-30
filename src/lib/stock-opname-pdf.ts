@@ -1,11 +1,12 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { numberedRabRows, groupAmount, lineAmount, rabTotals, rupiah, type OpnameItem } from "./stock-opname";
+import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "./rab-finalization";
 
 type ReportHeader = {
   project_name: string; division_location: string; disposition_number: string;
   responsible_name: string; auditor_name: string; status: string; completed_at: string | null;
-};
+} & FinalizedRab;
 export function stockOpnamePdf(header: ReportHeader, items: OpnameItem[], documents: { item_id: string; file_name: string }[]) {
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   pdf.setFontSize(18);
@@ -17,6 +18,7 @@ export function stockOpnamePdf(header: ReportHeader, items: OpnameItem[], docume
       ["Nomor disposisi", header.disposition_number || "-", "Penanggung jawab", header.responsible_name || "-"],
       ["Auditor", header.auditor_name || "-", "Status", header.status === "selesai" ? "Selesai" : "Berjalan"],
       ["Tanggal laporan", new Date().toLocaleDateString("id-ID"), "Tanggal selesai", header.completed_at ? new Date(header.completed_at).toLocaleDateString("id-ID") : "-"],
+      ["Status RAB", header.finalized_at ? "Final / terkunci" : "Draft", "Tanggal finalisasi", header.finalized_at ? new Date(header.finalized_at).toLocaleDateString("id-ID") : "-"],
     ],
   });
   const rows = numberedRabRows(items).map(({ item: i, number, children }) => {
@@ -37,6 +39,13 @@ export function stockOpnamePdf(header: ReportHeader, items: OpnameItem[], docume
       pdf.text(`AURA | Halaman ${pdf.getNumberOfPages()}`, 14, pdf.internal.pageSize.getHeight() - 8);
     },
   });
+  const tax = rabTaxTotals(totals.rab, header.vat_included);
+  autoTable(pdf, { theme: "plain", styles: { fontSize: 10 }, body: [["Total RAB sebelum PPN", rupiah(tax.subtotal)], [header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", rupiah(tax.ppn)], ["Total akhir RAB", rupiah(tax.total)]] });
+  const details = readRabFinalization(header);
+  if (details) {
+    autoTable(pdf, { theme: "grid", styles: { fontSize: 10 }, head: [["Kontraktor", "Penawaran sebelum PPN"]], body: details.contractors.map(c => [c.name, rupiah(c.amount)]) });
+    autoTable(pdf, { theme: "grid", styles: { fontSize: 10, minCellHeight: 16 }, head: [["Kewenangan", "Nama", "Jabatan", "Tanda tangan"]], body: [...details.approvers.map(p => ["Menyetujui", p.name, p.position, ""]), ...details.acknowledgers.map(p => ["Mengetahui", p.name, p.position, ""])] });
+  }
   const safeName = header.project_name.replace(/[^\p{L}\p{N} _-]/gu, "").slice(0, 80) || "Project";
   pdf.save(`Stock Opname - ${safeName}.pdf`);
 }

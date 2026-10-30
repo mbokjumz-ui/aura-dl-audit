@@ -707,37 +707,52 @@ export type Database = {
       }
       stock_opname_projects: {
         Row: {
+          acknowledgers: Json
+          approvers: Json
           auditor_name: string
           completed_at: string | null
+          contractor_quotes: Json
           created_at: string
           disposition_number: string
           division_location: string
+          finalized_at: string | null
           id: string
           project_name: string
           responsible_name: string
           status: string
+          vat_included: boolean
         }
         Insert: {
+          acknowledgers?: Json
+          approvers?: Json
           auditor_name?: string
           completed_at?: string | null
+          contractor_quotes?: Json
           created_at?: string
           disposition_number?: string
           division_location?: string
+          finalized_at?: string | null
           id?: string
           project_name: string
           responsible_name?: string
           status?: string
+          vat_included?: boolean
         }
         Update: {
+          acknowledgers?: Json
+          approvers?: Json
           auditor_name?: string
           completed_at?: string | null
+          contractor_quotes?: Json
           created_at?: string
           disposition_number?: string
           division_location?: string
+          finalized_at?: string | null
           id?: string
           project_name?: string
           responsible_name?: string
           status?: string
+          vat_included?: boolean
         }
         Relationships: []
       }
@@ -764,6 +779,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_stock_opname_rab: {
+        Args: {
+          _acknowledgers: Json
+          _approvers: Json
+          _contractor_quotes: Json
+          _rab_id: string
+          _vat_included: boolean
+        }
+        Returns: undefined
+      }
       finish_archived_project: {
         Args: { _finding_id: string; _project_id: string }
         Returns: undefined
