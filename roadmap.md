@@ -26,5 +26,5 @@
 - [x] Tambahkan login Pembelian dan pembuatan akun bernama oleh Internal Audit.
 - [x] Batasi akses Pembelian ke Stock Opname dan lindungi angka riil hanya untuk Internal Audit.
 - [x] Uji akses kedua peran dan pembatasan penyimpanan angka riil.
-- [ ] Tambahkan finalisasi permanen RAB, PPN Include/Exclude 11%, penawaran 1–3 kontraktor, dan pihak menyetujui/mengetahui masing-masing 1–2 orang.
-- [ ] Uji penguncian RAB, perhitungan PPN, dan laporan PDF tanpa menghalangi input opname Internal Audit.
+- [x] Tambahkan finalisasi permanen RAB, PPN Include/Exclude 11%, penawaran 1–3 kontraktor, dan pihak menyetujui/mengetahui masing-masing 1–2 orang.
+- [x] Uji penguncian RAB, perhitungan PPN, dan laporan PDF tanpa menghalangi input opname Internal Audit.
