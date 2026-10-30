@@ -85,6 +85,13 @@
       "when": 1793320095521,
       "tag": "0011_allow_privileged_rab_maintenance",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793320121127,
+      "tag": "0012_refine_privileged_rab_cleanup",
+      "breakpoints": true
     }
   ]
 }
