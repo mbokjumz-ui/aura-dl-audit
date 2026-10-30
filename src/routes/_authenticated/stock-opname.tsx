@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight, Paperclip, FileDown, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight, Paperclip, FileDown, CheckCircle2, RotateCcw, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { groupAmount, lineAmount, rabTotals, numberedRabRows, opnameCompletion, rupiah, type OpnameItem } from "@/lib/stock-opname";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { requireStockPage } from "@/lib/access-client";
 import { canEnterActual } from "@/lib/access";
+import { RabFinalizationDialog } from "@/components/RabFinalizationDialog";
+import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
   beforeLoad: requireStockPage,
@@ -57,7 +59,7 @@ function StockOpnamePage() {
          <Button variant="outline" key={p.id} onClick={() => setSelected(p.id)} className="h-auto min-w-0 flex-col items-stretch whitespace-normal rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary">
            <div className="flex items-start justify-between gap-3"><p className="break-words font-medium">{p.project_name}</p><span className="shrink-0 text-xs text-primary">{p.status === "selesai" ? "Selesai" : "Berjalan"}</span></div>
           <p className="mt-1 text-xs text-muted-foreground">{p.division_location || "—"} · Disposisi {p.disposition_number || "—"}</p>
-          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(t.rab)}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
+          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabTaxTotals(t.rab, p.vat_included).total)}{p.finalized_at ? " · Final" : " · Draft"}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
          </Button>); })}</div>}
     </>}
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
@@ -81,7 +83,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 type ItemForm = { id?: string; parent_id: string | null; description: string; quantity: string; unit: string; unit_price: string };
 
-function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: string; completed_at: string | null } & Header; items: OpnameItem[]; onBack: () => void; onEdit: () => void }) {
+function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: string; completed_at: string | null } & Header & FinalizedRab; items: OpnameItem[]; onBack: () => void; onEdit: () => void }) {
   const { appRole } = Route.useRouteContext();
   const canEditActual = canEnterActual(appRole);
   const client = useQueryClient();
@@ -89,12 +91,17 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const [form, setForm] = useState<ItemForm | null>(null);
   const [attachmentItem, setAttachmentItem] = useState<OpnameItem | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const locked = !!rab.finalized_at;
   const refresh = () => client.invalidateQueries({ queryKey: ["stock-opname-projects"] });
   const rows = numberedRabRows(items);
   const totals = rabTotals(items);
+  const taxTotals = rabTaxTotals(totals.rab, rab.vat_included);
+  const finalDetails = readRabFinalization(rab);
   const hasChildren = (id?: string) => !!id && items.some(i => i.parent_id === id);
 
   const saveItem = useMutation({ mutationFn: async (f: ItemForm) => {
+    if (locked) throw new Error("RAB sudah final dan tidak dapat diubah.");
     if (!f.description.trim()) throw new Error("Uraian pengerjaan wajib diisi.");
     const values = { rab_id: rab.id, parent_id: f.parent_id, description: f.description.trim(), quantity: Number(f.quantity) || 0, unit: f.unit.trim(), unit_price: Number(f.unit_price) || 0 };
     const r = f.id ? await supabase.from("stock_opname_items").update(values).eq("id", f.id)
@@ -107,8 +114,8 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (error) throw error;
     if (data.length) { const result = await supabase.storage.from("stock-opname-documents").remove(data.map(d => d.file_path)); if (result.error) throw result.error; }
   }
-  const removeItem = useMutation({ mutationFn: async (id: string) => { await removeFiles(items.filter(i => i.id === id || i.parent_id === id).map(i => i.id)); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; }, onSuccess: refresh, onError: e => toast.error(e.message) });
-  const removeRab = useMutation({ mutationFn: async () => { await removeFiles(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
+  const removeItem = useMutation({ mutationFn: async (id: string) => { if (locked) throw new Error("RAB sudah final."); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; }, onSuccess: refresh, onError: e => toast.error(e.message) });
+  const removeRab = useMutation({ mutationFn: async () => { if (locked) throw new Error("RAB sudah final."); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
     if (!canEditActual) throw new Error("Hanya Internal Audit dapat mengisi jumlah riil.");
@@ -144,9 +151,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       <td className="p-2 text-right">{group ? "" : rupiah(i.unit_price)}</td>
       <td className="p-2 text-right">{rupiah(rabAmt)}</td>
       {tab === "rab" ? <td className="p-2"><div className="flex justify-end gap-1">
-        {level === 0 && <Button size="icon" variant="ghost" aria-label="Tambah sub-poin" onClick={() => setForm({ parent_id: i.id, description: "", quantity: "", unit: "", unit_price: "" })}><Plus /></Button>}
+        {!locked && <>{level === 0 && <Button size="icon" variant="ghost" aria-label="Tambah sub-poin" onClick={() => setForm({ parent_id: i.id, description: "", quantity: "", unit: "", unit_price: "" })}><Plus /></Button>}
         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => edit(i)}><Pencil /></Button>
-        <Button size="icon" variant="ghost" aria-label="Hapus" disabled={!canEditActual && (i.actual_quantity !== null || !!group?.some(child => child.actual_quantity !== null))} onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button></div></td>
+        <Button size="icon" variant="ghost" aria-label="Hapus" disabled={!canEditActual && (i.actual_quantity !== null || !!group?.some(child => child.actual_quantity !== null))} onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button></>}</div></td>
       : <>
         <td className="p-2">{group ? "" : canEditActual ? <Input aria-label={`Jumlah riil ${i.description}`} type="number" min="0" step="any" className="h-8 w-24 text-right" defaultValue={i.actual_quantity ?? ""} onBlur={e => { if (e.target.value !== String(i.actual_quantity ?? "")) saveActual.mutate({ id: i.id, value: e.target.value }); }} /> : <span className="block text-right tabular-nums">{i.actual_quantity?.toLocaleString("id-ID") ?? "—"}</span>}</td>
         <td className="p-2 text-right">{actAmt === null ? "—" : rupiah(actAmt)}</td>
@@ -163,17 +170,18 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-1 text-sm text-muted-foreground">Divisi/lokasi: {rab.division_location || "—"} · No. disposisi: {rab.disposition_number || "—"}</p>
         <p className="mt-1 text-sm text-muted-foreground">Penanggung jawab: {rab.responsible_name || "—"} · Auditor: {rab.auditor_name || "—"}</p>
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
-      <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>
+      <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button><Button variant="outline" disabled={!items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button></>}
         <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
         {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
           const done = rab.status !== "selesai";
           const message = done ? `Tandai stock opname selesai?${totals.counted < totals.total ? ` Masih ada ${totals.total - totals.counted} poin tanpa jumlah riil.` : ""}` : "Buka kembali stock opname ini?";
           if (window.confirm(message)) complete.mutate(done);
         }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>}
-        <Button variant="outline" disabled={!canEditActual && items.some(item => item.actual_quantity !== null)} onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button></div>
+        {!locked && <Button variant="outline" disabled={!canEditActual && items.some(item => item.actual_quantity !== null)} onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button>}</div>
     </div>
+    {locked && <p className="mb-5 flex items-center gap-2 border-y border-border py-3 text-sm font-semibold text-primary"><LockKeyhole className="h-4 w-4" />RAB Final · {rab.finalized_at ? new Date(rab.finalized_at).toLocaleDateString("id-ID") : ""}</p>}
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
-      <Stat label="Total RAB" value={rupiah(totals.rab)} />
+      <Stat label={rab.vat_included ? "Total RAB + PPN 11%" : "Total RAB (Exclude PPN)"} value={rupiah(taxTotals.total)} />
       <Stat label={`Hasil opname (${totals.counted}/${totals.total})`} value={rupiah(totals.actual)} />
       <Stat label="Selisih" value={rupiah(totals.difference)} className={diffClass(totals.difference)} />
     </div>
@@ -182,8 +190,11 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <Button size="sm" variant={tab === "rab" ? "default" : "ghost"} onClick={() => setTab("rab")}>1. RAB</Button>
         <Button size="sm" variant={tab === "opname" ? "default" : "ghost"} onClick={() => setTab("opname")} disabled={!items.length}>2. Stock Opname</Button>
       </div>
-      {tab === "rab" && <Button onClick={() => setForm({ parent_id: null, description: "", quantity: "", unit: "", unit_price: "" })}><Plus />Tambah Poin</Button>}
+      {tab === "rab" && !locked && <Button onClick={() => setForm({ parent_id: null, description: "", quantity: "", unit: "", unit_price: "" })}><Plus />Tambah Poin</Button>}
     </div>
+    <dl className="ml-auto mt-4 max-w-sm space-y-2 text-sm"><div className="flex justify-between gap-3"><dt>Total sebelum PPN</dt><dd>{rupiah(totals.rab)}</dd></div><div className="flex justify-between gap-3"><dt>PPN {rab.vat_included ? "11%" : "(Exclude)"}</dt><dd>{rupiah(taxTotals.ppn)}</dd></div><div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(taxTotals.total)}</dd></div></dl>
+    {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
+    {finalizing && !locked && <RabFinalizationDialog rabId={rab.id} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-full min-w-[720px] text-sm">
         <thead className="border-b border-border text-left text-xs text-muted-foreground"><tr>
