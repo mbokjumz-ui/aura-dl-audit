@@ -108,14 +108,19 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       : await supabase.from("stock_opname_items").insert({ ...values, sort_order: items.length });
     if (r.error) throw r.error;
   }, onSuccess: () => { refresh(); setForm(null); }, onError: e => toast.error(e.message) });
-  async function removeFiles(itemIds: string[]) {
-    if (!itemIds.length) return;
+  async function filePaths(itemIds: string[]) {
+    if (!itemIds.length) return [];
     const { data, error } = await supabase.from("stock_opname_documents").select("file_path").in("item_id", itemIds);
     if (error) throw error;
-    if (data.length) { const result = await supabase.storage.from("stock-opname-documents").remove(data.map(d => d.file_path)); if (result.error) throw result.error; }
+    return data.map(d => d.file_path);
   }
-  const removeItem = useMutation({ mutationFn: async (id: string) => { if (locked) throw new Error("RAB sudah final."); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; }, onSuccess: refresh, onError: e => toast.error(e.message) });
-  const removeRab = useMutation({ mutationFn: async () => { if (locked) throw new Error("RAB sudah final."); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; },
+  async function cleanupFiles(paths: string[]) {
+    if (!paths.length) return;
+    const result = await supabase.storage.from("stock-opname-documents").remove(paths);
+    if (result.error) toast.error("Data dihapus, tetapi sebagian berkas belum dapat dibersihkan.");
+  }
+  const removeItem = useMutation({ mutationFn: async (id: string) => { if (locked) throw new Error("RAB sudah final."); const paths = await filePaths(items.filter(i => i.id === id || i.parent_id === id).map(i => i.id)); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; await cleanupFiles(paths); }, onSuccess: refresh, onError: e => toast.error(e.message) });
+  const removeRab = useMutation({ mutationFn: async () => { if (locked) throw new Error("RAB sudah final."); const paths = await filePaths(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths); },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
     if (!canEditActual) throw new Error("Hanya Internal Audit dapat mengisi jumlah riil.");
