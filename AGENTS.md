@@ -23,6 +23,7 @@
 - In shared follow-up recipient triggers, branch on the table before reading its specific fields; status updates must preserve access links and never read columns belonging to another table.
 - Stock opname RAB items are two-level (parent_id, enforced by trigger); only leaf rows carry quantity/price so totals never double count.
 - Finalize RAB independently from opname completion through a row-locked database function; triggers permanently freeze project budget metadata and all item fields except actual_quantity, while existing role protection and evidence access remain in force.
+- Use the shared RAB finalization permission for Internal Audit and Purchasing controls; finalization never grants actual-quantity or opname-completion access.
 - Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.
 - Generate stock opname PDFs client-side from the same numbered rows and totals used on screen, including header snapshots, completion status, and attachment filenames; reports must not expose private storage URLs.
 - Use shared AttachmentActions for private document previews: fetch short-lived signed files locally, sanitize Word content and render Excel as text, never send private URLs to external document viewers; preserve capability scope checks for auditee access.

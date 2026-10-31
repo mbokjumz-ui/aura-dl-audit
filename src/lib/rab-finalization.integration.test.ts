@@ -31,6 +31,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const args = { _rab_id: rabId, _vat_included: true, _contractor_quotes: [{ name: "A", amount: 1000000 }], _approvers: [{ name: "B", position: "Direktur" }], _acknowledgers: [{ name: "C", position: "Manager" }] };
     assert.ok((await buyer.rpc("finalize_stock_opname_rab", { ...args, _contractor_quotes: [] })).error);
     assert.equal((await buyer.rpc("finalize_stock_opname_rab", args)).error, null);
+    assert.ok((await buyer.from("stock_opname_projects").update({ status: "selesai", completed_at: new Date().toISOString() }).eq("id", rabId)).error);
     for (const client of clients) {
       assert.ok((await client.from("stock_opname_projects").update({ project_name: "Bypass" }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ finalized_at: null }).eq("id", rabId)).error);

@@ -11,3 +11,7 @@ export function canAccessPath(role: AppRole | null, path: string) {
 export function canEnterActual(role: AppRole | null) {
   return role === "internal_audit";
 }
+
+export function canFinalizeRab(role: AppRole | null) {
+  return role === "internal_audit" || role === "purchasing";
+}
