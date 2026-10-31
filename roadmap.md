@@ -28,3 +28,4 @@
 - [x] Uji akses kedua peran dan pembatasan penyimpanan angka riil.
 - [x] Tambahkan finalisasi permanen RAB, PPN Include/Exclude 11%, penawaran 1–3 kontraktor, dan pihak menyetujui/mengetahui masing-masing 1–2 orang.
 - [x] Uji penguncian RAB, perhitungan PPN, dan laporan PDF tanpa menghalangi input opname Internal Audit.
+- [ ] Verifikasi finalisasi RAB melalui login Pembelian, tanpa akses input riil atau penyelesaian opname.
