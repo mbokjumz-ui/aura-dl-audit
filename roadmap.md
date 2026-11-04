@@ -30,4 +30,4 @@
 - [x] Uji penguncian RAB, perhitungan PPN, dan laporan PDF tanpa menghalangi input opname Internal Audit.
 - [x] Verifikasi finalisasi RAB melalui login Pembelian, tanpa akses input riil atau penyelesaian opname.
 - [x] Izinkan Internal Audit menghapus RAB final, uji pembatasan Pembelian, dan hapus RAB data uji yang diminta.
-- [ ] Tambahkan data catatan, lama pekerjaan, DP dan jabatan penanggung jawab pada finalisasi, serta cetak permohonan disposisi RAB dan pengujian PDF.
+- [x] Tambahkan data catatan, lama pekerjaan, DP dan jabatan penanggung jawab pada finalisasi, serta cetak permohonan disposisi RAB dan pengujian PDF.

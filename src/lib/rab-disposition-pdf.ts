@@ -17,7 +17,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
     y += 2;
   }
   function table(options: Parameters<typeof autoTable>[1]) {
-    autoTable(pdf, { startY: y, margin: { left: margin, right: margin, top: 20, bottom: 17 }, theme: "grid", styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" }, ...options });
+    autoTable(pdf, { startY: y, margin: { left: margin, right: margin, top: 20, bottom: 17 }, theme: "plain", styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" }, ...options });
     const tablePdf = pdf as jsPDF & { lastAutoTable?: { finalY: number } };
     y = (tablePdf.lastAutoTable?.finalY ?? y) + 8;
   }
