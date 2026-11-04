@@ -755,6 +755,7 @@ export type Database = {
           disposition_number: string
           division_location: string
           down_payment_percent: number
+          finalization_draft: Json | null
           finalized_at: string | null
           id: string
           project_name: string
@@ -778,6 +779,7 @@ export type Database = {
           disposition_number?: string
           division_location?: string
           down_payment_percent?: number
+          finalization_draft?: Json | null
           finalized_at?: string | null
           id?: string
           project_name: string
@@ -801,6 +803,7 @@ export type Database = {
           disposition_number?: string
           division_location?: string
           down_payment_percent?: number
+          finalization_draft?: Json | null
           finalized_at?: string | null
           id?: string
           project_name?: string
@@ -887,6 +890,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      save_rab_finalization_draft: {
+        Args: { _draft: Json; _rab_id: string }
+        Returns: undefined
       }
       submit_follow_up: {
         Args: {

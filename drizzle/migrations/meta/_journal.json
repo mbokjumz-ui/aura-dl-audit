@@ -155,6 +155,13 @@
       "when": 1793778653422,
       "tag": "0021_retire_talud_unlock_exceptions",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793779000355,
+      "tag": "0022_rab_finalization_drafts",
+      "breakpoints": true
     }
   ]
 }
