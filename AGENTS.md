@@ -27,6 +27,7 @@
 - Delete whole finalized RABs through an Internal-Audit-authorized server function using privileged deletion and private file cleanup; retain database locks on budget edits and individual final items.
 - Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.
 - Generate stock opname PDFs client-side from the same numbered rows and totals used on screen, including header snapshots, completion status, and attachment filenames; reports must not expose private storage URLs.
+- Finalize disposition metadata atomically through a row-locked wrapper; generate disposition PDFs client-side from shared RAB totals and currency words without altering the Stock Opname report.
 - Use shared AttachmentActions for private document previews: fetch short-lived signed files locally, sanitize Word content and render Excel as text, never send private URLs to external document viewers; preserve capability scope checks for auditee access.
 - Store access roles in protected user_roles; existing accounts are backfilled as internal audit and new accounts receive no role automatically, preventing public signup privilege escalation.
 - Guard audit pages by role beneath the managed authentication gate, enforce the same boundary with restrictive RLS on audit data/files, and protect actual opname values and completion through database triggers to prevent bypass via direct requests or cascades.
