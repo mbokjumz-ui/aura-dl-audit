@@ -28,6 +28,14 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
     const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
+    const draft = { vatIncluded: true, note: "Draft belum lengkap", contractors: [{ name: "Kontraktor", amount: "" }], approvers: [{ name: "", position: "" }], acknowledgers: [{ name: "", position: "" }], workDays: "", workStartDate: "", downPayment: "30", responsiblePosition: "" };
+    for (const client of clients) {
+      assert.equal((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error, null);
+      const savedDraft = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
+      assert.equal(savedDraft.error, null);
+      assert.deepEqual(savedDraft.data?.finalization_draft, draft);
+      assert.equal(savedDraft.data?.finalized_at, null);
+    }
     const args = { _rab_id: rabId, _vat_included: true, _contractor_quotes: Array.from({ length: 5 }, (_, i) => ({ name: `Kontraktor ${i + 1}`, amount: 1000000 })), _approvers: Array.from({ length: 4 }, (_, i) => ({ name: `Penyetuju ${i + 1}`, position: "Direktur" })), _acknowledgers: Array.from({ length: 4 }, (_, i) => ({ name: `Mengetahui ${i + 1}`, position: "Manager" })) };
     assert.ok((await buyer.rpc("finalize_stock_opname_rab", { ...args, _contractor_quotes: [] })).error);
     const dispositionArgs = { ...args, _note: "Material sesuai spesifikasi", _work_duration: "14 hari", _down_payment_percent: 30, _responsible_position: "Manajer" };
@@ -55,6 +63,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(disposition.data?.responsible_position, "Manajer");
     assert.ok((await buyer.from("stock_opname_projects").update({ status: "selesai", completed_at: new Date().toISOString() }).eq("id", rabId)).error);
     for (const client of clients) {
+      assert.ok((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error);
       assert.ok((await client.from("stock_opname_projects").update({ project_name: "Bypass" }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ finalized_at: null }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ work_start_date: "2026-12-01", work_duration_days: 1 }).eq("id", rabId)).error);
