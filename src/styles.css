@@ -50,6 +50,11 @@
 }
 
 :root {
+  --report-table-header: #35465b;
+  --report-table-header-text: #ffffff;
+  --report-table-border: #8b96a3;
+  --report-table-total: #e9edf2;
+  --report-table-text: #202a35;
   --radius: 0.625rem;
   --background: oklch(0.975 0.008 240);
   --foreground: oklch(0.22 0.045 250);

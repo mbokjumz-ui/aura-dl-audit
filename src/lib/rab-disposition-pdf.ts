@@ -3,6 +3,13 @@ import autoTable from "jspdf-autotable";
 import { dispositionAmounts, rupiahWords } from "./rab-disposition";
 import { readRabFinalization, type FinalizedRab } from "./rab-finalization";
 import { rupiah, type OpnameItem } from "./stock-opname";
+import reportStyles from "../styles.css?raw";
+
+function reportColor(token: string) {
+  const color = reportStyles.match(new RegExp(`--report-table-${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
+  if (!color) throw new Error("Warna tabel laporan tidak tersedia.");
+  return color;
+}
 
 type DispositionHeader = FinalizedRab & { project_name: string; division_location: string; disposition_number: string; responsible_name: string };
 export function createRabDispositionPdf(header: DispositionHeader, items: OpnameItem[]) {
@@ -17,7 +24,13 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
     y += 2;
   }
   function table(options: Parameters<typeof autoTable>[1]) {
-    autoTable(pdf, { startY: y, margin: { left: margin, right: margin, top: 20, bottom: 17 }, theme: "plain", styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" }, ...options });
+    autoTable(pdf, {
+      startY: y, margin: { left: margin, right: margin, top: 20, bottom: 17 }, theme: "grid",
+      styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak", lineWidth: 0.2, lineColor: reportColor("border"), textColor: reportColor("text") },
+      headStyles: { fillColor: reportColor("header"), textColor: reportColor("header-text"), fontStyle: "bold", lineWidth: 0.2 },
+      footStyles: { fillColor: reportColor("total"), textColor: reportColor("text"), fontStyle: "bold", lineWidth: 0.2 },
+      ...options,
+    });
     const tablePdf = pdf as jsPDF & { lastAutoTable?: { finalY: number } };
     y = (tablePdf.lastAutoTable?.finalY ?? y) + 8;
   }
