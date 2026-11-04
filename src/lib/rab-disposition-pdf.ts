@@ -48,6 +48,12 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
     body: rows.map(({ number, item, children, level, amount }) => [number, `${level ? "   " : ""}${item.description}`, children.length ? "" : item.quantity.toLocaleString("id-ID"), children.length ? "" : item.unit, children.length ? "" : rupiah(item.unit_price), rupiah(amount)]),
     foot: [["", "Total sebelum PPN", "", "", "", rupiah(totals.subtotal)], ["", header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", "", "", "", rupiah(totals.ppn)], ["", "Total akhir RAB", "", "", "", rupiah(totals.total)]],
     showFoot: "lastPage", columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 62 }, 2: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
+    didParseCell: (data) => {
+      if (data.section === "body" && rows[data.row.index]?.children.length) {
+        data.cell.styles.fillColor = reportColor("parent");
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
   });
   text(`Note: ${header.disposition_note || "-"}`);
   text(`Lama Pekerjaan: ${header.work_duration || "-"}`);
