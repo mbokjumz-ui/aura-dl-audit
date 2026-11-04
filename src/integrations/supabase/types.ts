@@ -713,14 +713,18 @@ export type Database = {
           completed_at: string | null
           contractor_quotes: Json
           created_at: string
+          disposition_note: string
           disposition_number: string
           division_location: string
+          down_payment_percent: number
           finalized_at: string | null
           id: string
           project_name: string
           responsible_name: string
+          responsible_position: string
           status: string
           vat_included: boolean
+          work_duration: string
         }
         Insert: {
           acknowledgers?: Json
@@ -729,14 +733,18 @@ export type Database = {
           completed_at?: string | null
           contractor_quotes?: Json
           created_at?: string
+          disposition_note?: string
           disposition_number?: string
           division_location?: string
+          down_payment_percent?: number
           finalized_at?: string | null
           id?: string
           project_name: string
           responsible_name?: string
+          responsible_position?: string
           status?: string
           vat_included?: boolean
+          work_duration?: string
         }
         Update: {
           acknowledgers?: Json
@@ -745,14 +753,18 @@ export type Database = {
           completed_at?: string | null
           contractor_quotes?: Json
           created_at?: string
+          disposition_note?: string
           disposition_number?: string
           division_location?: string
+          down_payment_percent?: number
           finalized_at?: string | null
           id?: string
           project_name?: string
           responsible_name?: string
+          responsible_position?: string
           status?: string
           vat_included?: boolean
+          work_duration?: string
         }
         Relationships: []
       }
@@ -779,6 +791,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_rab_disposition: {
+        Args: {
+          _acknowledgers: Json
+          _approvers: Json
+          _contractor_quotes: Json
+          _down_payment_percent: number
+          _note: string
+          _rab_id: string
+          _responsible_position: string
+          _vat_included: boolean
+          _work_duration: string
+        }
+        Returns: undefined
+      }
       finalize_stock_opname_rab: {
         Args: {
           _acknowledgers: Json
