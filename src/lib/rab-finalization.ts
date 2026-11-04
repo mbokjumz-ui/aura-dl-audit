@@ -4,9 +4,9 @@ const name = z.string().trim().min(1, "Nama wajib diisi.").max(150);
 const signatory = z.object({ name, position: z.string().trim().min(1, "Jabatan wajib diisi.").max(150) });
 export const rabFinalizationSchema = z.object({
   vatIncluded: z.boolean(),
-  contractors: z.array(z.object({ name, amount: z.number().finite().min(0).max(100000000000000) })).min(1).max(3),
-  approvers: z.array(signatory).min(1).max(2),
-  acknowledgers: z.array(signatory).min(1).max(2),
+  contractors: z.array(z.object({ name, amount: z.number().finite().min(0).max(100000000000000) })).min(1),
+  approvers: z.array(signatory).min(1),
+  acknowledgers: z.array(signatory).min(1),
 });
 export type RabFinalization = z.infer<typeof rabFinalizationSchema>;
 export type FinalizedRab = {

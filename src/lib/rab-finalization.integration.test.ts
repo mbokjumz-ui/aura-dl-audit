@@ -28,7 +28,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
     const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
-    const args = { _rab_id: rabId, _vat_included: true, _contractor_quotes: [{ name: "A", amount: 1000000 }], _approvers: [{ name: "B", position: "Direktur" }], _acknowledgers: [{ name: "C", position: "Manager" }] };
+    const args = { _rab_id: rabId, _vat_included: true, _contractor_quotes: Array.from({ length: 5 }, (_, i) => ({ name: `Kontraktor ${i + 1}`, amount: 1000000 })), _approvers: Array.from({ length: 4 }, (_, i) => ({ name: `Penyetuju ${i + 1}`, position: "Direktur" })), _acknowledgers: Array.from({ length: 4 }, (_, i) => ({ name: `Mengetahui ${i + 1}`, position: "Manager" })) };
     assert.ok((await buyer.rpc("finalize_stock_opname_rab", { ...args, _contractor_quotes: [] })).error);
     const dispositionArgs = { ...args, _note: "Material sesuai spesifikasi", _work_duration: "14 hari", _down_payment_percent: 30, _responsible_position: "Manajer" };
     assert.ok((await buyer.rpc("finalize_rab_disposition", { ...dispositionArgs, _down_payment_percent: 101 })).error);
@@ -40,6 +40,11 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(failed.data?.work_start_date, null);
     assert.equal(failed.data?.finalized_at, null);
     assert.equal((await buyer.rpc("finalize_rab_scheduled_disposition", scheduledArgs)).error, null);
+    const parties = await buyer.from("stock_opname_projects").select("contractor_quotes,approvers,acknowledgers").eq("id", rabId).single();
+    assert.equal(parties.error, null);
+    assert.deepEqual(parties.data?.contractor_quotes, args._contractor_quotes);
+    assert.deepEqual(parties.data?.approvers, args._approvers);
+    assert.deepEqual(parties.data?.acknowledgers, args._acknowledgers);
     const disposition = await buyer.from("stock_opname_projects").select("disposition_note,work_duration,down_payment_percent,responsible_position,work_duration_days,work_start_date,work_end_date").eq("id", rabId).single();
     assert.equal(disposition.data?.disposition_note, "Material sesuai spesifikasi");
     assert.equal(disposition.data?.work_duration, "14 hari kalender");
