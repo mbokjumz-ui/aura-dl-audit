@@ -113,6 +113,13 @@
       "when": 1793766104760,
       "tag": "0015_retire_completed_rab_unlock_exception",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793766172165,
+      "tag": "0016_preserve_final_rab_completion_with_generated_schedule",
+      "breakpoints": true
     }
   ]
 }
