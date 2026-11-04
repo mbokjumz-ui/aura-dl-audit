@@ -127,6 +127,34 @@
       "when": 1793766427974,
       "tag": "0017_signed_rab_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793778535147,
+      "tag": "0018_unlimited_rab_parties_and_scoped_talud_unlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793778581071,
+      "tag": "0019_handle_generated_schedule_in_talud_maintenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793778629532,
+      "tag": "0020_scoped_talud_maintenance_completion_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793778653422,
+      "tag": "0021_retire_talud_unlock_exceptions",
+      "breakpoints": true
     }
   ]
 }

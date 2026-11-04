@@ -35,3 +35,6 @@
 - [x] Tambahkan jumlah hari, tanggal mulai dan tanggal selesai otomatis pada finalisasi serta cetak RAB; uji penyimpanan.
 - [x] Tambahkan unggah, lihat dan unduh PDF RAB yang sudah ditandatangani serta uji penyimpanan privat.
 - [x] Verifikasi melalui login Pembelian: catatan, DP, jadwal otomatis, finalisasi, cetak RAB, serta unggah/lihat/unduh/hapus PDF disetujui; jumlah riil dan penyelesaian tetap khusus Internal Audit.
+- [x] Buka kembali RAB Pekerjaan Talud Perbatasan Gentan tanpa mengubah rincian dan hasil opname.
+- [x] Hilangkan batas jumlah kontraktor dan pihak menyetujui/mengetahui pada finalisasi, serta uji penyimpanannya.
+- [x] Susun seluruh tanda tangan cetak RAB mendatar dalam satu baris dan periksa PDF.

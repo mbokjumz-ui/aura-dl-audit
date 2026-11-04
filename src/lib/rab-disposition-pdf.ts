@@ -63,31 +63,41 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
   text("Pembayaran:", true);
   text(`- Pembayaran DP ${(header.down_payment_percent ?? 0).toLocaleString("id-ID")}%`);
   text("- Pembayaran Pelunasan setelah Pekerjaan selesai sesuai Stock Opname.");
-  function signatures(title: string, people: { name: string; position: string }[]) {
-    for (let offset = 0; offset < people.length; offset += 2) {
-      const pair = people.slice(offset, offset + 2);
-      pdf.setFontSize(11);
-      const cellWidth = width / pair.length;
-      const nameLines = pair.map(p => pdf.splitTextToSize(p.name || "-", cellWidth - 8) as string[]);
-      const positionLines = pair.map(p => pdf.splitTextToSize(p.position || "-", cellWidth - 8) as string[]);
-      const height = 39 + Math.max(...nameLines.map(lines => lines.length)) * 5 + Math.max(...positionLines.map(lines => lines.length)) * 5;
-      space(height); text(title, true);
-      const start = y;
-      pair.forEach((p, i) => {
-        const x = margin + cellWidth * (i + 0.5);
-        pdf.setFont("helvetica", "normal"); pdf.setFontSize(10);
-        pdf.text("(Tanda tangan)", x, start + 22, { align: "center" });
-        pdf.setFont("helvetica", "bold");
-        pdf.text(nameLines[i] ?? [p.name], x, start + 31, { align: "center" });
-        pdf.setFont("helvetica", "normal");
-        pdf.text(positionLines[i] ?? [p.position], x, start + 31 + (nameLines[i]?.length ?? 1) * 5, { align: "center" });
-      });
-      y = start + height;
-    }
-  }
-  signatures("Menyetujui", details?.approvers ?? [{ name: "-", position: "-" }]);
-  signatures("Mengetahui", details?.acknowledgers ?? [{ name: "-", position: "-" }]);
-  signatures("Penanggung jawab proyek", [{ name: header.responsible_name, position: header.responsible_position || "-" }]);
+  const signatureGroups = [
+    { title: "Menyetujui", people: details?.approvers ?? [{ name: "-", position: "-" }] },
+    { title: "Mengetahui", people: details?.acknowledgers ?? [{ name: "-", position: "-" }] },
+    { title: "Penanggung jawab proyek", people: [{ name: header.responsible_name || "-", position: header.responsible_position || "-" }] },
+  ];
+  const count = signatureGroups.reduce((total, group) => total + group.people.length, 0);
+  const cellWidth = width / count;
+  const fontSize = Math.min(10, cellWidth / 2.8);
+  const lineHeight = fontSize * 0.45;
+  const contentWidth = cellWidth * 0.92;
+  const columns = signatureGroups.flatMap(group => group.people.map(person => ({ ...person, title: group.title })));
+  pdf.setFontSize(fontSize);
+  pdf.setFont("helvetica", "bold");
+  const headings = columns.map(p => pdf.splitTextToSize(p.title, contentWidth) as string[]);
+  const names = columns.map(p => pdf.splitTextToSize(p.name, contentWidth) as string[]);
+  pdf.setFont("helvetica", "normal");
+  const positions = columns.map(p => pdf.splitTextToSize(p.position, contentWidth) as string[]);
+  const headingHeight = Math.max(...headings.map(lines => lines.length)) * lineHeight;
+  const nameHeight = Math.max(...names.map(lines => lines.length)) * lineHeight;
+  const positionHeight = Math.max(...positions.map(lines => lines.length)) * lineHeight;
+  const height = headingHeight + 30 + nameHeight + positionHeight;
+  space(height);
+  const start = y;
+  columns.forEach((_, i) => {
+    const x = margin + cellWidth * (i + 0.5);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(headings[i] ?? [], x, start, { align: "center", lineHeightFactor: 1.25 });
+    pdf.setFont("helvetica", "normal");
+    pdf.text("(Tanda tangan)", x, start + headingHeight + 22, { align: "center" });
+    pdf.setFont("helvetica", "bold");
+    pdf.text(names[i] ?? [], x, start + headingHeight + 28, { align: "center", lineHeightFactor: 1.25 });
+    pdf.setFont("helvetica", "normal");
+    pdf.text(positions[i] ?? [], x, start + headingHeight + 28 + nameHeight, { align: "center", lineHeightFactor: 1.25 });
+  });
+  y = start + height;
   return pdf;
 }
 export function rabDispositionPdf(header: DispositionHeader, items: OpnameItem[]) {
