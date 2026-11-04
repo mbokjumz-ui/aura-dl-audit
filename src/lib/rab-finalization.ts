@@ -15,7 +15,17 @@ export type FinalizedRab = {
   contractor_quotes: unknown;
   approvers: unknown;
   acknowledgers: unknown;
+  disposition_note?: string;
+  work_duration?: string;
+  down_payment_percent?: number;
+  responsible_position?: string;
 };
+export const rabDispositionSchema = z.object({
+  note: z.string().trim().max(5000),
+  workDuration: z.string().trim().min(1, "Lama pekerjaan wajib diisi.").max(150),
+  downPaymentPercent: z.number().finite().min(0).max(100),
+  responsiblePosition: z.string().trim().min(1, "Jabatan penanggung jawab wajib diisi.").max(150),
+});
 export function rabTaxTotals(subtotal: number, included: boolean) {
   const ppn = included ? Math.round(subtotal * 0.11 * 100) / 100 : 0;
   return { subtotal, ppn, total: Math.round((subtotal + ppn) * 100) / 100 };
