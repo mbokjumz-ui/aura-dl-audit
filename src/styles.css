@@ -54,6 +54,7 @@
   --report-table-header-text: #ffffff;
   --report-table-border: #8b96a3;
   --report-table-total: #e9edf2;
+  --report-table-parent: #d4dbe4;
   --report-table-text: #202a35;
   --radius: 0.625rem;
   --background: oklch(0.975 0.008 240);
