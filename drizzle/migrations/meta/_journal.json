@@ -134,6 +134,13 @@
       "when": 1793778535147,
       "tag": "0018_unlimited_rab_parties_and_scoped_talud_unlock",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793778581071,
+      "tag": "0019_handle_generated_schedule_in_talud_maintenance",
+      "breakpoints": true
     }
   ]
 }
