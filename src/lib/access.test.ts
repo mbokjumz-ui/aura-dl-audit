@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { canAccessPath, canEnterActual, canFinalizeRab, roleHome } from "./access";
+import { canAccessPath, canEnterActual, canFinalizeRab, canDeleteFinalRab, roleHome } from "./access";
 
 test("Pembelian hanya dapat mengakses Stock Opname", () => {
   assert.equal(canAccessPath("purchasing", "/stock-opname"), true);
@@ -15,6 +15,13 @@ test("Pembelian dan Internal Audit dapat memfinalisasi RAB", () => {
   assert.equal(canFinalizeRab("purchasing"), true);
   assert.equal(canFinalizeRab("internal_audit"), true);
   assert.equal(canFinalizeRab(null), false);
+});
+test("Internal Audit dapat menghapus seluruh RAB final", () => {
+  assert.equal(canDeleteFinalRab("internal_audit"), true);
+});
+test("Pembelian dan pengguna tanpa peran tidak dapat menghapus RAB final", () => {
+  assert.equal(canDeleteFinalRab("purchasing"), false);
+  assert.equal(canDeleteFinalRab(null), false);
 });
 test("Tujuan login mengikuti peran dan akun tanpa peran tidak memiliki akses", () => {
   assert.equal(roleHome("purchasing"), "/stock-opname");

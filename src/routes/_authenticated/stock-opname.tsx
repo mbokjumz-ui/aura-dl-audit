@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteAuditRab } from "@/lib/stock-opname.functions";
 import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight, Paperclip, FileDown, CheckCircle2, RotateCcw, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { requireStockPage } from "@/lib/access-client";
-import { canEnterActual, canFinalizeRab } from "@/lib/access";
+import { canEnterActual, canFinalizeRab, canDeleteFinalRab } from "@/lib/access";
 import { RabFinalizationDialog } from "@/components/RabFinalizationDialog";
 import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
 
@@ -87,6 +89,8 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const { appRole } = Route.useRouteContext();
   const canEditActual = canEnterActual(appRole);
   const canFinalize = canFinalizeRab(appRole);
+  const canDeleteFinal = canDeleteFinalRab(appRole);
+  const deleteRab = useServerFn(deleteAuditRab);
   const client = useQueryClient();
   const [tab, setTab] = useState<"rab" | "opname">("rab");
   const [form, setForm] = useState<ItemForm | null>(null);
@@ -121,7 +125,15 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (result.error) toast.error("Data dihapus, tetapi sebagian berkas belum dapat dibersihkan.");
   }
   const removeItem = useMutation({ mutationFn: async (id: string) => { if (locked) throw new Error("RAB sudah final."); const paths = await filePaths(items.filter(i => i.id === id || i.parent_id === id).map(i => i.id)); const r = await supabase.from("stock_opname_items").delete().eq("id", id); if (r.error) throw r.error; await cleanupFiles(paths); }, onSuccess: refresh, onError: e => toast.error(e.message) });
-  const removeRab = useMutation({ mutationFn: async () => { if (locked) throw new Error("RAB sudah final."); const paths = await filePaths(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths); },
+  const removeRab = useMutation({ mutationFn: async () => {
+    if (canDeleteFinal) {
+      const result = await deleteRab({ data: { rabId: rab.id } });
+      if (!result.filesCleaned) toast.error("Data dihapus, tetapi sebagian berkas belum dapat dibersihkan.");
+      return;
+    }
+    if (locked) throw new Error("Hanya Internal Audit dapat menghapus RAB final.");
+    const paths = await filePaths(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
+  },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
     if (!canEditActual) throw new Error("Hanya Internal Audit dapat mengisi jumlah riil.");
@@ -183,7 +195,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
           const message = done ? `Tandai stock opname selesai?${totals.counted < totals.total ? ` Masih ada ${totals.total - totals.counted} poin tanpa jumlah riil.` : ""}` : "Buka kembali stock opname ini?";
           if (window.confirm(message)) complete.mutate(done);
         }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>}
-        {!locked && <Button variant="outline" disabled={!canEditActual && items.some(item => item.actual_quantity !== null)} onClick={() => confirm("Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />Hapus</Button>}</div>
+        {(!locked || canDeleteFinal) && <Button variant="outline" disabled={removeRab.isPending || saveActual.isPending || complete.isPending || saveItem.isPending || (!canEditActual && items.some(item => item.actual_quantity !== null))} onClick={() => confirm(locked ? "Hapus permanen RAB final ini beserta seluruh rincian, hasil opname, dan lampirannya? Tindakan ini tidak dapat dibatalkan." : "Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />{removeRab.isPending ? "Menghapus…" : "Hapus"}</Button>}</div>
     </div>
     {locked && <p className="mb-5 flex items-center gap-2 border-y border-border py-3 text-sm font-semibold text-primary"><LockKeyhole className="h-4 w-4" />RAB Final · {rab.finalized_at ? new Date(rab.finalized_at).toLocaleDateString("id-ID") : ""}</p>}
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
