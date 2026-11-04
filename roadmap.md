@@ -33,3 +33,4 @@
 - [x] Tambahkan data catatan, lama pekerjaan, DP dan jabatan penanggung jawab pada finalisasi, serta cetak permohonan disposisi RAB dan pengujian PDF.
 - [x] Buka kembali finalisasi RAB Pembuatan Septictank Toilet Unit Garment tanpa mengubah rincian atau hasil opname.
 - [x] Tambahkan jumlah hari, tanggal mulai dan tanggal selesai otomatis pada finalisasi serta cetak RAB; uji penyimpanan.
+- [ ] Tambahkan unggah, lihat dan unduh PDF RAB yang sudah ditandatangani serta uji penyimpanan privat.
