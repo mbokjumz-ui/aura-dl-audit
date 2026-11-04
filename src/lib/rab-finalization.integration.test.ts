@@ -30,12 +30,20 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(row.error, null); assert.ok(row.data);
     const args = { _rab_id: rabId, _vat_included: true, _contractor_quotes: [{ name: "A", amount: 1000000 }], _approvers: [{ name: "B", position: "Direktur" }], _acknowledgers: [{ name: "C", position: "Manager" }] };
     assert.ok((await buyer.rpc("finalize_stock_opname_rab", { ...args, _contractor_quotes: [] })).error);
-    assert.equal((await buyer.rpc("finalize_stock_opname_rab", args)).error, null);
+    const dispositionArgs = { ...args, _note: "Material sesuai spesifikasi", _work_duration: "14 hari", _down_payment_percent: 30, _responsible_position: "Manajer" };
+    assert.ok((await buyer.rpc("finalize_rab_disposition", { ...dispositionArgs, _down_payment_percent: 101 })).error);
+    assert.equal((await buyer.rpc("finalize_rab_disposition", dispositionArgs)).error, null);
+    const disposition = await buyer.from("stock_opname_projects").select("disposition_note,work_duration,down_payment_percent,responsible_position").eq("id", rabId).single();
+    assert.equal(disposition.data?.disposition_note, "Material sesuai spesifikasi");
+    assert.equal(disposition.data?.work_duration, "14 hari");
+    assert.equal(disposition.data?.down_payment_percent, 30);
+    assert.equal(disposition.data?.responsible_position, "Manajer");
     assert.ok((await buyer.from("stock_opname_projects").update({ status: "selesai", completed_at: new Date().toISOString() }).eq("id", rabId)).error);
     for (const client of clients) {
       assert.ok((await client.from("stock_opname_projects").update({ project_name: "Bypass" }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ finalized_at: null }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ vat_included: false }).eq("id", rabId)).error);
+      assert.ok((await client.from("stock_opname_projects").update({ disposition_note: "Bypass", down_payment_percent: 0 }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_items").update({ quantity: 99, actual_quantity: 9 }).eq("id", row.data.id)).error);
       assert.ok((await client.from("stock_opname_items").insert({ rab_id: rabId, description: "Bypass" })).error);
       assert.ok((await client.from("stock_opname_items").delete().eq("id", row.data.id)).error);
