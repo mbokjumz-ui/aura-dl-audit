@@ -141,6 +141,13 @@
       "when": 1793778581071,
       "tag": "0019_handle_generated_schedule_in_talud_maintenance",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793778629532,
+      "tag": "0020_scoped_talud_maintenance_completion_guard",
+      "breakpoints": true
     }
   ]
 }
