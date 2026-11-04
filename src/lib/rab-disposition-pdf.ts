@@ -13,7 +13,7 @@ function reportColor(token: string) {
 }
 
 type DispositionHeader = FinalizedRab & { project_name: string; division_location: string; disposition_number: string; responsible_name: string };
-export function createRabDispositionPdf(header: DispositionHeader, items: OpnameItem[]) {
+export function createRabDispositionPdf(header: DispositionHeader, items: OpnameItem[], options: { draft?: boolean } = {}) {
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const margin = 16, width = 178, bottom = 280;
   let y = 22;
@@ -39,6 +39,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
   const details = readRabFinalization(header);
   text("PERMOHONAN DISPOSISI PROYEK", true, true);
   text(header.disposition_number || "-", true, true);
+  if (options.draft) text("DRAFT - BELUM FINAL", true, true);
   y += 5;
   text(`Mohon disposisi biaya ${header.project_name} di ${header.division_location || "-"}`);
   text(rupiah(totals.total), true);
