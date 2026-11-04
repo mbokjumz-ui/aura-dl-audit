@@ -133,7 +133,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       return;
     }
     if (locked) throw new Error("Hanya Internal Audit dapat menghapus RAB final.");
-    const paths = await filePaths(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
+    const approvals = await supabase.from("rab_approval_documents").select("file_path").eq("rab_id", rab.id);
+    if (approvals.error) throw approvals.error;
+    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
   },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
@@ -241,6 +243,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     {locked && <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><div><dt className="font-semibold">Note</dt><dd className="whitespace-pre-wrap break-words">{rab.disposition_note || "—"}</dd></div><div><dt className="font-semibold">Lama pekerjaan</dt><dd>{workScheduleLabel(rab)}</dd></div><div><dt className="font-semibold">Pembayaran DP</dt><dd>{(rab.down_payment_percent ?? 0).toLocaleString("id-ID")}%</dd></div><div><dt className="font-semibold">Jabatan penanggung jawab</dt><dd>{rab.responsible_position || "—"}</dd></div></dl>}
     {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
     {finalizing && !locked && canFinalize && <RabFinalizationDialog rabId={rab.id} initialRab={rab} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
+    <ArchiveDocuments signedRabId={rab.id} />
     <Dialog open={!!attachmentItem} onOpenChange={o => !o && setAttachmentItem(null)}>
       <DialogContent><DialogHeader><DialogTitle>Lampiran — {attachmentItem?.description}</DialogTitle></DialogHeader>
         {attachmentItem && <ArchiveDocuments stockItemId={attachmentItem.id} />}

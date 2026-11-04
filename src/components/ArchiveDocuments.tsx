@@ -7,17 +7,22 @@ import { ARCHIVE_BUCKET, FILE_ACCEPT, validateArchiveFile } from "@/lib/archive"
 import { Button } from "@/components/ui/button";
 import { AttachmentActions } from "@/components/AttachmentActions";
 import { privateDocumentUrl } from "@/lib/document-preview";
+import { validateRabApprovalPdf } from "@/lib/rab-approval";
 
-export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: string } | { stockItemId: string }) {
+export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: string } | { stockItemId: string } | { signedRabId: string }) {
+  const signed = "signedRabId" in props;
   const stock = "stockItemId" in props;
   const iso = "isoObjectId" in props;
-  const ownerId = "stockItemId" in props ? props.stockItemId : "isoObjectId" in props ? props.isoObjectId : props.findingId;
-  const bucket = stock ? "stock-opname-documents" : iso ? "iso-documents" : ARCHIVE_BUCKET;
+  const ownerId = "signedRabId" in props ? props.signedRabId : "stockItemId" in props ? props.stockItemId : "isoObjectId" in props ? props.isoObjectId : props.findingId;
+  const bucket = signed || stock ? "stock-opname-documents" : iso ? "iso-documents" : ARCHIVE_BUCKET;
+  const validate = signed ? validateRabApprovalPdf : validateArchiveFile;
   const input = useRef<HTMLInputElement>(null);
   const client = useQueryClient();
-  const key = [stock ? "stock-opname-documents" : iso ? "iso-documents" : "archive-documents", ownerId];
+  const key = [signed ? "rab-approval-documents" : stock ? "stock-opname-documents" : iso ? "iso-documents" : "archive-documents", ownerId];
   const query = useQuery({ queryKey: key, queryFn: async () => {
-    const { data, error } = stock
+    const { data, error } = signed
+      ? await supabase.from("rab_approval_documents").select("*").eq("rab_id", ownerId).order("created_at")
+      : stock
       ? await supabase.from("stock_opname_documents").select("*").eq("item_id", ownerId).order("created_at")
       : iso
       ? await supabase.from("iso_documents").select("*").eq("object_id", ownerId).order("created_at")
@@ -26,13 +31,15 @@ export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: s
     return data;
   }});
   const upload = useMutation({ mutationFn: async (files: File[]) => {
-    for (const file of files) validateArchiveFile(file);
+    for (const file of files) validate(file);
     for (const file of files) {
-      const path = `${ownerId}/${crypto.randomUUID()}.${validateArchiveFile(file)}`;
+      const path = `${signed ? "rab-approved/" : ""}${ownerId}/${crypto.randomUUID()}.${validate(file)}`;
       const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
       if (uploadError) throw uploadError;
-      const values = { file_name: file.name, file_path: path, file_size: file.size, content_type: file.type || "application/octet-stream" };
-      const { error } = stock
+      const values = { file_name: file.name, file_path: path, file_size: file.size, content_type: signed ? "application/pdf" : file.type || "application/octet-stream" };
+      const { error } = signed
+        ? await supabase.from("rab_approval_documents").insert({ ...values, rab_id: ownerId })
+        : stock
         ? await supabase.from("stock_opname_documents").insert({ ...values, item_id: ownerId })
         : iso
         ? await supabase.from("iso_documents").insert({ ...values, object_id: ownerId })
@@ -43,12 +50,12 @@ export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: s
   const remove = useMutation({ mutationFn: async (doc: { id: string; file_path: string }) => {
     const { error: storageError } = await supabase.storage.from(bucket).remove([doc.file_path]);
     if (storageError) throw storageError;
-    const { error } = await supabase.from(stock ? "stock_opname_documents" : iso ? "iso_documents" : "archive_documents").delete().eq("id", doc.id);
+    const { error } = await supabase.from(signed ? "rab_approval_documents" : stock ? "stock_opname_documents" : iso ? "iso_documents" : "archive_documents").delete().eq("id", doc.id);
     if (error) throw error;
   }, onSuccess: () => { toast.success("Dokumen dihapus"); client.invalidateQueries({ queryKey: key }); }, onError: (e) => toast.error(e.message) });
   return <section className="mt-6 border-t border-border pt-5">
-    <div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-semibold">Dokumen</h3><Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => input.current?.click()}><Upload />{upload.isPending ? "Mengunggah…" : "Unggah Dokumen"}</Button></div>
-    <input ref={input} type="file" multiple accept={FILE_ACCEPT} className="hidden" aria-label={stock ? "Lampiran stock opname" : iso ? "Lampiran ISO" : "Lampiran arsip"} onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) upload.mutate(files); e.target.value = ""; }} />
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{signed ? "RAB Disetujui / Ditandatangani" : "Dokumen"}</h3><Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => input.current?.click()}><Upload />{upload.isPending ? "Mengunggah…" : signed ? "Unggah PDF Disetujui" : "Unggah Dokumen"}</Button></div>
+    <input ref={input} type="file" multiple accept={signed ? ".pdf,application/pdf" : FILE_ACCEPT} className="hidden" aria-label={signed ? "PDF RAB ditandatangani" : stock ? "Lampiran stock opname" : iso ? "Lampiran ISO" : "Lampiran arsip"} onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) upload.mutate(files); e.target.value = ""; }} />
     {query.isPending && <p className="text-sm text-muted-foreground">Memuat dokumen…</p>}
     {query.error && <p role="alert" className="text-sm text-destructive">{query.error.message}</p>}
     {!query.isPending && !query.error && query.data?.length === 0 && <p className="text-sm text-muted-foreground">Belum ada dokumen.</p>}
