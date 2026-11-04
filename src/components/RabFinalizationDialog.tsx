@@ -3,31 +3,37 @@ import { useMutation } from "@tanstack/react-query";
 import { LockKeyhole, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { rabFinalizationSchema, rabDispositionSchema, rabTaxTotals } from "@/lib/rab-finalization";
+import { rabFinalizationSchema, rabDispositionSchema, rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
+import { rabScheduleSchema, workEndDate, scheduleDateLabel } from "@/lib/rab-schedule";
 import { rupiah } from "@/lib/stock-opname";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-export function RabFinalizationDialog({ rabId, subtotal, onClose, onFinalized }: { rabId: string; subtotal: number; onClose: () => void; onFinalized: () => void }) {
-  const [vatIncluded, setVatIncluded] = useState(false);
-  const [contractors, setContractors] = useState([{ name: "", amount: "" }]);
-  const [approvers, setApprovers] = useState([{ name: "", position: "" }]);
-  const [acknowledgers, setAcknowledgers] = useState([{ name: "", position: "" }]);
+export function RabFinalizationDialog({ rabId, subtotal, initialRab, onClose, onFinalized }: { rabId: string; subtotal: number; initialRab: FinalizedRab; onClose: () => void; onFinalized: () => void }) {
+  const saved = readRabFinalization(initialRab);
+  const [vatIncluded, setVatIncluded] = useState(initialRab.vat_included);
+  const [contractors, setContractors] = useState(saved?.contractors.map(c => ({ name: c.name, amount: String(c.amount) })) ?? [{ name: "", amount: "" }]);
+  const [approvers, setApprovers] = useState(saved?.approvers ?? [{ name: "", position: "" }]);
+  const [acknowledgers, setAcknowledgers] = useState(saved?.acknowledgers ?? [{ name: "", position: "" }]);
   const [confirmed, setConfirmed] = useState(false);
-  const [note, setNote] = useState("");
-  const [workDuration, setWorkDuration] = useState("");
-  const [downPayment, setDownPayment] = useState("0");
-  const [responsiblePosition, setResponsiblePosition] = useState("");
+  const [note, setNote] = useState(initialRab.disposition_note ?? "");
+  const [workDays, setWorkDays] = useState(initialRab.work_duration_days ? String(initialRab.work_duration_days) : "");
+  const [workStartDate, setWorkStartDate] = useState(initialRab.work_start_date ?? "");
+  const workEnd = workEndDate(workStartDate, Number(workDays));
+  const [downPayment, setDownPayment] = useState(String(initialRab.down_payment_percent ?? 0));
+  const [responsiblePosition, setResponsiblePosition] = useState(initialRab.responsible_position ?? "");
   const totals = rabTaxTotals(subtotal, vatIncluded);
   const save = useMutation({ mutationFn: async () => {
     const parsed = rabFinalizationSchema.safeParse({ vatIncluded, contractors: contractors.map(c => ({ name: c.name, amount: c.amount.trim() ? Number(c.amount) : NaN })), approvers, acknowledgers });
     if (!parsed.success) throw new Error("Lengkapi nama, nilai penawaran, dan jabatan yang wajib diisi.");
-    const disposition = rabDispositionSchema.safeParse({ note, workDuration, downPaymentPercent: downPayment.trim() ? Number(downPayment) : NaN, responsiblePosition });
+    const schedule = rabScheduleSchema.safeParse({ workDays: Number(workDays), workStartDate });
+    if (!schedule.success) throw new Error("Masukkan jumlah hari bulat positif dan tanggal mulai yang valid.");
+    const disposition = rabDispositionSchema.safeParse({ note, workDuration: `${schedule.data.workDays} hari kalender`, downPaymentPercent: downPayment.trim() ? Number(downPayment) : NaN, responsiblePosition });
     if (!disposition.success) throw new Error("Lengkapi lama pekerjaan, jabatan penanggung jawab, dan DP antara 0–100 persen.");
     if (!confirmed) throw new Error("Konfirmasi penguncian RAB terlebih dahulu.");
-    const { error } = await supabase.rpc("finalize_rab_disposition", { _rab_id: rabId, _vat_included: parsed.data.vatIncluded, _contractor_quotes: parsed.data.contractors, _approvers: parsed.data.approvers, _acknowledgers: parsed.data.acknowledgers, _note: disposition.data.note, _work_duration: disposition.data.workDuration, _down_payment_percent: disposition.data.downPaymentPercent, _responsible_position: disposition.data.responsiblePosition });
+    const { error } = await supabase.rpc("finalize_rab_scheduled_disposition", { _rab_id: rabId, _vat_included: parsed.data.vatIncluded, _contractor_quotes: parsed.data.contractors, _approvers: parsed.data.approvers, _acknowledgers: parsed.data.acknowledgers, _note: disposition.data.note, _work_days: schedule.data.workDays, _work_start_date: schedule.data.workStartDate, _down_payment_percent: disposition.data.downPaymentPercent, _responsible_position: disposition.data.responsiblePosition });
     if (error) throw error;
   }, onSuccess: () => { toast.success("RAB difinalisasi dan dikunci permanen."); onFinalized(); onClose(); }, onError: e => toast.error(e.message) });
   const signatories = (title: string, rows: typeof approvers, setRows: typeof setApprovers) => <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">{title}</legend>{rows.map((row, i) => <div key={i} className="flex items-end gap-2"><div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2"><label className="space-y-1 text-sm">Nama {i + 1}<Input required maxLength={150} value={row.name} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, name: e.target.value } : r))} /></label><label className="space-y-1 text-sm">Jabatan {i + 1}<Input required maxLength={150} value={row.position} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, position: e.target.value } : r))} /></label></div>{rows.length > 1 && <Button type="button" size="icon" variant="ghost" title={`Hapus ${title} ${i + 1}`} aria-label={`Hapus ${title} ${i + 1}`} onClick={() => setRows(rows.filter((_, n) => n !== i))}><Trash2 /></Button>}</div>)}{rows.length < 2 && <Button type="button" variant="outline" size="sm" onClick={() => setRows([...rows, { name: "", position: "" }])}><Plus />Tambah {title}</Button>}</fieldset>;
@@ -37,7 +43,11 @@ export function RabFinalizationDialog({ rabId, subtotal, onClose, onFinalized }:
     <fieldset className="space-y-3"><legend className="mb-2 font-semibold">Perbandingan penawaran sebelum PPN</legend>{contractors.map((row, i) => <div key={i} className="flex items-end gap-2"><div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2"><label className="space-y-1 text-sm">Nama kontraktor {i + 1}<Input required maxLength={150} value={row.name} onChange={e => setContractors(contractors.map((r, n) => n === i ? { ...r, name: e.target.value } : r))} /></label><label className="space-y-1 text-sm">Penawaran {i + 1} sebelum PPN (Rp)<Input required type="number" min="0" max="100000000000000" step="0.01" value={row.amount} onChange={e => setContractors(contractors.map((r, n) => n === i ? { ...r, amount: e.target.value } : r))} /></label></div>{contractors.length > 1 && <Button type="button" size="icon" variant="ghost" title={`Hapus kontraktor ${i + 1}`} aria-label={`Hapus kontraktor ${i + 1}`} onClick={() => setContractors(contractors.filter((_, n) => n !== i))}><Trash2 /></Button>}</div>)}{contractors.length < 3 && <Button type="button" variant="outline" size="sm" onClick={() => setContractors([...contractors, { name: "", amount: "" }])}><Plus />Tambah Kontraktor</Button>}</fieldset>
     <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">Disposisi dan pembayaran</legend>
       <label className="block space-y-1 text-sm">Note / catatan<Textarea maxLength={5000} value={note} onChange={e => setNote(e.target.value)} /></label>
-      <label className="block space-y-1 text-sm">Lama pekerjaan<Input required maxLength={150} value={workDuration} onChange={e => setWorkDuration(e.target.value)} /></label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block space-y-1 text-sm">Lama pekerjaan (hari kalender)<Input required type="number" min="1" step="1" value={workDays} onChange={e => setWorkDays(e.target.value)} /></label>
+        <label className="block space-y-1 text-sm">Tanggal mulai pengerjaan<Input required type="date" min="0001-01-01" max="9999-12-31" value={workStartDate} onChange={e => setWorkStartDate(e.target.value)} /></label>
+      </div>
+      <label className="block space-y-1 text-sm">Tanggal selesai pengerjaan<Input readOnly value={workEnd ? scheduleDateLabel(workEnd) : ""} /></label>
       <label className="block space-y-1 text-sm">Pembayaran DP (%)<Input required type="number" min="0" max="100" step="0.01" value={downPayment} onChange={e => setDownPayment(e.target.value)} /></label>
       <label className="block space-y-1 text-sm">Jabatan penanggung jawab proyek<Input required maxLength={150} value={responsiblePosition} onChange={e => setResponsiblePosition(e.target.value)} /></label>
     </fieldset>
