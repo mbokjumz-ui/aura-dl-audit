@@ -524,6 +524,44 @@ export type Database = {
         }
         Relationships: []
       }
+      rab_approval_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          rab_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          rab_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          rab_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rab_approval_documents_rab_id_fkey"
+            columns: ["rab_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stage_documents: {
         Row: {
           content_type: string
