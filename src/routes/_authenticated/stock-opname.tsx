@@ -155,6 +155,15 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     finally { setExporting(false); }
   }
 
+  async function exportRab() {
+    setExporting(true);
+    try {
+      const { rabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
+      rabDispositionPdf(rab, items);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "RAB gagal dicetak."); }
+    finally { setExporting(false); }
+  }
+
   const edit = (i: OpnameItem) => setForm({ id: i.id, parent_id: i.parent_id, description: i.description, quantity: String(i.quantity), unit: i.unit, unit_price: String(i.unit_price) });
   const diffClass = (d: number) => d < 0 ? "text-destructive" : d > 0 ? "text-primary" : "text-muted-foreground";
 
@@ -190,6 +199,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
       <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>{canFinalize && <Button variant="outline" disabled={!items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button>}</>}
         <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
+        <Button variant="outline" disabled={!locked || exporting || removeRab.isPending} onClick={exportRab}><FileDown />Cetak RAB</Button>
         {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
           const done = rab.status !== "selesai";
           const message = done ? `Tandai stock opname selesai?${totals.counted < totals.total ? ` Masih ada ${totals.total - totals.counted} poin tanpa jumlah riil.` : ""}` : "Buka kembali stock opname ini?";
@@ -227,6 +237,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       </table>
     </div>
     <dl className="ml-auto mt-4 max-w-sm space-y-2 text-sm"><div className="flex justify-between gap-3"><dt>Total sebelum PPN</dt><dd>{rupiah(totals.rab)}</dd></div><div className="flex justify-between gap-3"><dt>PPN {rab.vat_included ? "11%" : "(Exclude)"}</dt><dd>{rupiah(taxTotals.ppn)}</dd></div><div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(taxTotals.total)}</dd></div></dl>
+    {locked && <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><div><dt className="font-semibold">Note</dt><dd className="whitespace-pre-wrap break-words">{rab.disposition_note || "—"}</dd></div><div><dt className="font-semibold">Lama pekerjaan</dt><dd>{rab.work_duration || "—"}</dd></div><div><dt className="font-semibold">Pembayaran DP</dt><dd>{(rab.down_payment_percent ?? 0).toLocaleString("id-ID")}%</dd></div><div><dt className="font-semibold">Jabatan penanggung jawab</dt><dd>{rab.responsible_position || "—"}</dd></div></dl>}
     {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
     {finalizing && !locked && canFinalize && <RabFinalizationDialog rabId={rab.id} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
     <Dialog open={!!attachmentItem} onOpenChange={o => !o && setAttachmentItem(null)}>
