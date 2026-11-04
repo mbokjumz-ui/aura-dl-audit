@@ -4,6 +4,7 @@ import { dispositionAmounts, rupiahWords } from "./rab-disposition";
 import { readRabFinalization, type FinalizedRab } from "./rab-finalization";
 import { rupiah, type OpnameItem } from "./stock-opname";
 import reportStyles from "../styles.css?raw";
+import { workScheduleLabel } from "./rab-schedule";
 
 function reportColor(token: string) {
   const color = reportStyles.match(new RegExp(`--report-table-${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
@@ -56,7 +57,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
     },
   });
   text(`Note: ${header.disposition_note || "-"}`);
-  text(`Lama Pekerjaan: ${header.work_duration || "-"}`);
+  text(`Lama Pekerjaan: ${workScheduleLabel(header)}`);
   text("Perbandingan Penawaran Sebelum PPN:", true);
   table({ head: [["No.", "Kontraktor", "Penawaran sebelum PPN"]], body: details?.contractors.map((c, i) => [String(i + 1), c.name, rupiah(c.amount)]) ?? [["-", "-", "-"]], columnStyles: { 0: { cellWidth: 12 }, 2: { halign: "right" } } });
   text("Pembayaran:", true);

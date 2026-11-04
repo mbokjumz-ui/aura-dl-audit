@@ -17,6 +17,9 @@ export type FinalizedRab = {
   acknowledgers: unknown;
   disposition_note?: string;
   work_duration?: string;
+  work_duration_days?: number | null;
+  work_start_date?: string | null;
+  work_end_date?: string | null;
   down_payment_percent?: number;
   responsible_position?: string;
 };

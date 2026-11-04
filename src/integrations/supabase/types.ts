@@ -725,6 +725,9 @@ export type Database = {
           status: string
           vat_included: boolean
           work_duration: string
+          work_duration_days: number | null
+          work_end_date: string | null
+          work_start_date: string | null
         }
         Insert: {
           acknowledgers?: Json
@@ -745,6 +748,9 @@ export type Database = {
           status?: string
           vat_included?: boolean
           work_duration?: string
+          work_duration_days?: number | null
+          work_end_date?: string | null
+          work_start_date?: string | null
         }
         Update: {
           acknowledgers?: Json
@@ -765,6 +771,9 @@ export type Database = {
           status?: string
           vat_included?: boolean
           work_duration?: string
+          work_duration_days?: number | null
+          work_end_date?: string | null
+          work_start_date?: string | null
         }
         Relationships: []
       }
@@ -802,6 +811,21 @@ export type Database = {
           _responsible_position: string
           _vat_included: boolean
           _work_duration: string
+        }
+        Returns: undefined
+      }
+      finalize_rab_scheduled_disposition: {
+        Args: {
+          _acknowledgers: Json
+          _approvers: Json
+          _contractor_quotes: Json
+          _down_payment_percent: number
+          _note: string
+          _rab_id: string
+          _responsible_position: string
+          _vat_included: boolean
+          _work_days: number
+          _work_start_date: string
         }
         Returns: undefined
       }
