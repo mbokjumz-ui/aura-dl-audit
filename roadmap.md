@@ -38,5 +38,5 @@
 - [x] Buka kembali RAB Pekerjaan Talud Perbatasan Gentan tanpa mengubah rincian dan hasil opname.
 - [x] Hilangkan batas jumlah kontraktor dan pihak menyetujui/mengetahui pada finalisasi, serta uji penyimpanannya.
 - [x] Susun seluruh tanda tangan cetak RAB mendatar dalam satu baris dan periksa PDF.
-- [ ] Simpan draft finalisasi tanpa mengunci RAB dan pulihkan isian saat dibuka kembali.
-- [ ] Pratinjau cetakan RAB dari isian terbaru sebelum finalisasi; uji penyimpanan dan akses Pembelian.
+- [x] Simpan draft finalisasi tanpa mengunci RAB dan pulihkan isian saat dibuka kembali.
+- [x] Pratinjau cetakan RAB dari isian terbaru sebelum finalisasi; uji penyimpanan dan akses Pembelian.
