@@ -31,5 +31,5 @@
 - [x] Verifikasi finalisasi RAB melalui login Pembelian, tanpa akses input riil atau penyelesaian opname.
 - [x] Izinkan Internal Audit menghapus RAB final, uji pembatasan Pembelian, dan hapus RAB data uji yang diminta.
 - [x] Tambahkan data catatan, lama pekerjaan, DP dan jabatan penanggung jawab pada finalisasi, serta cetak permohonan disposisi RAB dan pengujian PDF.
-- [ ] Buka kembali finalisasi RAB Pembuatan Septictank Toilet Unit Garment tanpa mengubah rincian atau hasil opname.
-- [ ] Tambahkan jumlah hari, tanggal mulai dan tanggal selesai otomatis pada finalisasi serta cetak RAB; uji penyimpanan.
+- [x] Buka kembali finalisasi RAB Pembuatan Septictank Toilet Unit Garment tanpa mengubah rincian atau hasil opname.
+- [x] Tambahkan jumlah hari, tanggal mulai dan tanggal selesai otomatis pada finalisasi serta cetak RAB; uji penyimpanan.
