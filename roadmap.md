@@ -40,3 +40,5 @@
 - [x] Susun seluruh tanda tangan cetak RAB mendatar dalam satu baris dan periksa PDF.
 - [x] Simpan draft finalisasi tanpa mengunci RAB dan pulihkan isian saat dibuka kembali.
 - [x] Pratinjau cetakan RAB dari isian terbaru sebelum finalisasi; uji penyimpanan dan akses Pembelian.
+- [ ] Tambahkan pembukaan revisi beralasan, histori, nomor rev pada cetak RAB, dan kunci permanen setelah PDF ditandatangani diunggah.
+- [ ] Uji revisi dan penguncian akhir untuk Internal Audit dan Pembelian.
