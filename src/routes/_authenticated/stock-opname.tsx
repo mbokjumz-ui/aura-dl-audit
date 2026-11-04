@@ -133,7 +133,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       return;
     }
     if (locked) throw new Error("Hanya Internal Audit dapat menghapus RAB final.");
-    const paths = await filePaths(items.map(i => i.id)); const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
+    const approvals = await supabase.from("rab_approval_documents").select("file_path").eq("rab_id", rab.id);
+    if (approvals.error) throw approvals.error;
+    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
   },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
