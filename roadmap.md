@@ -34,3 +34,4 @@
 - [x] Buka kembali finalisasi RAB Pembuatan Septictank Toilet Unit Garment tanpa mengubah rincian atau hasil opname.
 - [x] Tambahkan jumlah hari, tanggal mulai dan tanggal selesai otomatis pada finalisasi serta cetak RAB; uji penyimpanan.
 - [x] Tambahkan unggah, lihat dan unduh PDF RAB yang sudah ditandatangani serta uji penyimpanan privat.
+- [x] Verifikasi melalui login Pembelian: catatan, DP, jadwal otomatis, finalisasi, cetak RAB, serta unggah/lihat/unduh/hapus PDF disetujui; jumlah riil dan penyelesaian tetap khusus Internal Audit.
