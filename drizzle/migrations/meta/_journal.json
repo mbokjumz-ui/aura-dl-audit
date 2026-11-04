@@ -148,6 +148,13 @@
       "when": 1793778629532,
       "tag": "0020_scoped_talud_maintenance_completion_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793778653422,
+      "tag": "0021_retire_talud_unlock_exceptions",
+      "breakpoints": true
     }
   ]
 }
