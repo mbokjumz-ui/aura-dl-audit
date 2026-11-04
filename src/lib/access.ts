@@ -15,3 +15,7 @@ export function canEnterActual(role: AppRole | null) {
 export function canFinalizeRab(role: AppRole | null) {
   return role === "internal_audit" || role === "purchasing";
 }
+
+export function canDeleteFinalRab(role: AppRole | null) {
+  return role === "internal_audit";
+}
