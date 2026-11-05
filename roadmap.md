@@ -42,3 +42,5 @@
 - [x] Pratinjau cetakan RAB dari isian terbaru sebelum finalisasi; uji penyimpanan dan akses Pembelian.
 - [x] Tambahkan pembukaan revisi beralasan, histori, nomor rev pada cetak RAB, dan kunci permanen setelah PDF ditandatangani diunggah.
 - [x] Uji revisi dan penguncian akhir untuk Internal Audit dan Pembelian.
+- [ ] Tambahkan lampiran PDF/gambar saat finalisasi, gabungkan pada pratinjau dan cetak RAB, serta bersihkan saat RAB dihapus.
+- [ ] Uji urutan halaman, penyimpanan lampiran dan pembatasan setelah finalisasi.
