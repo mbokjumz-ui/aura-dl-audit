@@ -162,6 +162,13 @@
       "when": 1793779000355,
       "tag": "0022_rab_finalization_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793840459950,
+      "tag": "0023_rab_revision_history_and_signed_lock",
+      "breakpoints": true
     }
   ]
 }
