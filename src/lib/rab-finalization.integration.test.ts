@@ -81,6 +81,39 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const read = await buyer.from("stock_opname_projects").select("finalized_at,vat_included,stock_opname_items(quantity,actual_quantity)").eq("id", rabId).single();
     assert.ok(read.data?.finalized_at); assert.equal(read.data?.vat_included, true);
     assert.equal(read.data?.stock_opname_items[0]?.quantity, 10); assert.equal(read.data?.stock_opname_items[0]?.actual_quantity, 9);
+    for (const [index, client] of clients.entries()) {
+      assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "   " })).error);
+      const reason = index === 0 ? "Revisi saat pengajuan tanda tangan" : "Revisi kedua nilai pekerjaan";
+      const reopened = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
+      assert.equal(reopened.error, null);
+      assert.equal(reopened.data, index + 1);
+      assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "Pembukaan ganda" })).error);
+      const state = await client.from("stock_opname_projects").select("finalized_at,revision_number,finalization_draft").eq("id", rabId).single();
+      assert.equal(state.data?.finalized_at, null);
+      assert.equal(state.data?.revision_number, index + 1);
+      assert.equal(state.data?.finalization_draft, null);
+      const history = await client.from("rab_revisions").select("reason,revision_number,created_by").eq("rab_id", rabId).eq("revision_number", index + 1).single();
+      assert.equal(history.error, null);
+      assert.equal(history.data?.reason, reason);
+      assert.equal(history.data?.created_by, users[index]);
+      assert.ok((await client.from("rab_revisions").insert({ rab_id: rabId, revision_number: 99, reason: "Bypass", created_by: users[index] })).error);
+      assert.ok((await client.from("stock_opname_projects").update({ revision_number: 99 }).eq("id", rabId)).error);
+      const premature = { rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 };
+      assert.ok((await client.from("rab_approval_documents").insert(premature)).error);
+      assert.equal((await client.from("stock_opname_items").update({ quantity: 10 + index }).eq("id", row.data.id)).error, null);
+      assert.equal((await client.rpc("finalize_rab_scheduled_disposition", scheduledArgs)).error, null);
+    }
+    const signed = await buyer.from("rab_approval_documents").insert({ rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
+    assert.equal(signed.error, null); assert.ok(signed.data);
+    const signedState = await audit.from("stock_opname_projects").select("signed_locked_at,revision_number").eq("id", rabId).single();
+    assert.ok(signedState.data?.signed_locked_at);
+    assert.equal(signedState.data?.revision_number, 2);
+    assert.equal((await buyer.from("rab_approval_documents").delete().eq("id", signed.data.id)).error, null);
+    for (const client of clients) {
+      assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "Setelah PDF dihapus" })).error);
+      assert.ok((await client.from("stock_opname_projects").update({ signed_locked_at: null, finalized_at: null }).eq("id", rabId)).error);
+      assert.ok((await client.from("stock_opname_items").update({ quantity: 99 }).eq("id", row.data.id)).error);
+    }
   } finally {
     if (rabId) assert.equal((await admin.from("stock_opname_projects").delete().eq("id", rabId)).error, null);
     for (const userId of users) await admin.auth.admin.deleteUser(userId);

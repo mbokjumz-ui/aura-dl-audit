@@ -16,6 +16,7 @@ import { canEnterActual, canFinalizeRab, canDeleteFinalRab } from "@/lib/access"
 import { RabFinalizationDialog } from "@/components/RabFinalizationDialog";
 import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
 import { workScheduleLabel } from "@/lib/rab-schedule";
+import { RabRevisionControls } from "@/components/RabRevisionControls";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
   beforeLoad: requireStockPage,
@@ -62,7 +63,7 @@ function StockOpnamePage() {
          <Button variant="outline" key={p.id} onClick={() => setSelected(p.id)} className="h-auto min-w-0 flex-col items-stretch whitespace-normal rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary">
            <div className="flex items-start justify-between gap-3"><p className="break-words font-medium">{p.project_name}</p><span className="shrink-0 text-xs text-primary">{p.status === "selesai" ? "Selesai" : "Berjalan"}</span></div>
           <p className="mt-1 text-xs text-muted-foreground">{p.division_location || "—"} · Disposisi {p.disposition_number || "—"}</p>
-          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabTaxTotals(t.rab, p.vat_included).total)}{p.finalized_at ? " · Final" : " · Draft"}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
+          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabTaxTotals(t.rab, p.vat_included).total)}{p.finalized_at ? " · Final" : " · Draft"}{p.revision_number > 0 ? ` · rev${p.revision_number}` : ""}{p.signed_locked_at ? " · Ditandatangani" : ""}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
          </Button>); })}</div>}
     </>}
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
@@ -201,6 +202,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-1 text-sm text-muted-foreground">Penanggung jawab: {rab.responsible_name || "—"} · Auditor: {rab.auditor_name || "—"}</p>
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
       <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>{canFinalize && <Button variant="outline" disabled={!items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button>}</>}
+        <RabRevisionControls key={rab.id} rabId={rab.id} finalized={locked} signedLocked={!!rab.signed_locked_at} canRevise={canFinalize} />
         <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
         <Button variant="outline" disabled={!locked || exporting || removeRab.isPending} onClick={exportRab}><FileDown />Cetak RAB</Button>
         {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
@@ -210,7 +212,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>}
         {(!locked || canDeleteFinal) && <Button variant="outline" disabled={removeRab.isPending || saveActual.isPending || complete.isPending || saveItem.isPending || (!canEditActual && items.some(item => item.actual_quantity !== null))} onClick={() => confirm(locked ? "Hapus permanen RAB final ini beserta seluruh rincian, hasil opname, dan lampirannya? Tindakan ini tidak dapat dibatalkan." : "Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />{removeRab.isPending ? "Menghapus…" : "Hapus"}</Button>}</div>
     </div>
-    {locked && <p className="mb-5 flex items-center gap-2 border-y border-border py-3 text-sm font-semibold text-primary"><LockKeyhole className="h-4 w-4" />RAB Final · {rab.finalized_at ? new Date(rab.finalized_at).toLocaleDateString("id-ID") : ""}</p>}
+    {(locked || !!rab.revision_number) && <p className="mb-5 flex flex-wrap items-center gap-2 border-y border-border py-3 text-sm font-semibold text-primary"><LockKeyhole className="h-4 w-4" />{rab.signed_locked_at ? "RAB Ditandatangani · Terkunci Permanen" : locked ? "RAB Final" : "RAB Dalam Revisi"}{rab.revision_number ? ` · rev${rab.revision_number}` : ""}{locked && rab.finalized_at ? ` · ${new Date(rab.finalized_at).toLocaleDateString("id-ID")}` : ""}</p>}
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
       <Stat label={rab.vat_included ? "Total RAB + PPN 11%" : "Total RAB (Exclude PPN)"} value={rupiah(taxTotals.total)} />
       <Stat label={`Hasil opname (${totals.counted}/${totals.total})`} value={rupiah(totals.actual)} />
@@ -243,7 +245,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     {locked && <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><div><dt className="font-semibold">Note</dt><dd className="whitespace-pre-wrap break-words">{rab.disposition_note || "—"}</dd></div><div><dt className="font-semibold">Lama pekerjaan</dt><dd>{workScheduleLabel(rab)}</dd></div><div><dt className="font-semibold">Pembayaran DP</dt><dd>{(rab.down_payment_percent ?? 0).toLocaleString("id-ID")}%</dd></div><div><dt className="font-semibold">Jabatan penanggung jawab</dt><dd>{rab.responsible_position || "—"}</dd></div></dl>}
     {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
     {finalizing && !locked && canFinalize && <RabFinalizationDialog rabId={rab.id} initialRab={rab} items={items} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
-    <ArchiveDocuments signedRabId={rab.id} />
+    <ArchiveDocuments signedRabId={rab.id} signedUploadAllowed={locked} />
     <Dialog open={!!attachmentItem} onOpenChange={o => !o && setAttachmentItem(null)}>
       <DialogContent><DialogHeader><DialogTitle>Lampiran — {attachmentItem?.description}</DialogTitle></DialogHeader>
         {attachmentItem && <ArchiveDocuments stockItemId={attachmentItem.id} />}

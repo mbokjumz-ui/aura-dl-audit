@@ -22,7 +22,7 @@
 - Keep follow-up evidence private and submissions append-only; commit evidence metadata and submitted status atomically, requiring auditor review before approval.
 - In shared follow-up recipient triggers, branch on the table before reading its specific fields; status updates must preserve access links and never read columns belonging to another table.
 - Stock opname RAB items are two-level (parent_id, enforced by trigger); only leaf rows carry quantity/price so totals never double count.
-- Finalize RAB independently from opname completion through a row-locked database function; triggers permanently freeze project budget metadata and all item fields except actual_quantity, while existing role protection and evidence access remain in force.
+- Finalize RAB independently from opname completion; row-locked revision RPCs record append-only reasons and counters before reopening, and signed-upload triggers permanently latch revision locks even after file deletion, preserving actual-quantity role protection.
 - Use the shared RAB finalization permission for Internal Audit and Purchasing controls; finalization never grants actual-quantity or opname-completion access.
 - Delete whole finalized RABs through an Internal-Audit-authorized server function using privileged deletion and private file cleanup; retain database locks on budget edits and individual final items.
 - Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.

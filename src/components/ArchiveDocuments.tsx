@@ -9,8 +9,9 @@ import { AttachmentActions } from "@/components/AttachmentActions";
 import { privateDocumentUrl } from "@/lib/document-preview";
 import { validateRabApprovalPdf } from "@/lib/rab-approval";
 
-export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: string } | { stockItemId: string } | { signedRabId: string }) {
+export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: string } | { stockItemId: string } | { signedRabId: string; signedUploadAllowed?: boolean }) {
   const signed = "signedRabId" in props;
+  const signedUploadAllowed = !signed || props.signedUploadAllowed !== false;
   const stock = "stockItemId" in props;
   const iso = "isoObjectId" in props;
   const ownerId = "signedRabId" in props ? props.signedRabId : "stockItemId" in props ? props.stockItemId : "isoObjectId" in props ? props.isoObjectId : props.findingId;
@@ -31,6 +32,7 @@ export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: s
     return data;
   }});
   const upload = useMutation({ mutationFn: async (files: File[]) => {
+    if (!signedUploadAllowed) throw new Error("Finalisasi RAB sebelum mengunggah PDF ditandatangani.");
     for (const file of files) validate(file);
     for (const file of files) {
       const path = `${signed ? "rab-approved/" : ""}${ownerId}/${crypto.randomUUID()}.${validate(file)}`;
@@ -46,7 +48,7 @@ export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: s
         : await supabase.from("archive_documents").insert({ ...values, finding_id: ownerId });
       if (error) { await supabase.storage.from(bucket).remove([path]); throw error; }
     }
-  }, onSuccess: () => toast.success("Dokumen diunggah"), onError: (e) => toast.error(e.message), onSettled: () => client.invalidateQueries({ queryKey: key }) });
+  }, onSuccess: () => toast.success(signed ? "PDF diunggah. RAB terkunci permanen dari revisi." : "Dokumen diunggah"), onError: (e) => toast.error(e.message), onSettled: () => { client.invalidateQueries({ queryKey: key }); if (signed) client.invalidateQueries({ queryKey: ["stock-opname-projects"] }); } });
   const remove = useMutation({ mutationFn: async (doc: { id: string; file_path: string }) => {
     const { error: storageError } = await supabase.storage.from(bucket).remove([doc.file_path]);
     if (storageError) throw storageError;
@@ -54,7 +56,7 @@ export function ArchiveDocuments(props: { findingId: string } | { isoObjectId: s
     if (error) throw error;
   }, onSuccess: () => { toast.success("Dokumen dihapus"); client.invalidateQueries({ queryKey: key }); }, onError: (e) => toast.error(e.message) });
   return <section className="mt-6 border-t border-border pt-5">
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{signed ? "RAB Disetujui / Ditandatangani" : "Dokumen"}</h3><Button variant="outline" size="sm" disabled={upload.isPending} onClick={() => input.current?.click()}><Upload />{upload.isPending ? "Mengunggah…" : signed ? "Unggah PDF Disetujui" : "Unggah Dokumen"}</Button></div>
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{signed ? "RAB Disetujui / Ditandatangani" : "Dokumen"}</h3><Button variant="outline" size="sm" disabled={upload.isPending || !signedUploadAllowed} onClick={() => { if (!signed || window.confirm("Unggah PDF ditandatangani? RAB akan terkunci permanen dan tidak dapat dibuka untuk revisi, sekalipun PDF kemudian dihapus.")) input.current?.click(); }}><Upload />{upload.isPending ? "Mengunggah…" : signed ? "Unggah PDF Disetujui" : "Unggah Dokumen"}</Button></div>
     <input ref={input} type="file" multiple accept={signed ? ".pdf,application/pdf" : FILE_ACCEPT} className="hidden" aria-label={signed ? "PDF RAB ditandatangani" : stock ? "Lampiran stock opname" : iso ? "Lampiran ISO" : "Lampiran arsip"} onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) upload.mutate(files); e.target.value = ""; }} />
     {query.isPending && <p className="text-sm text-muted-foreground">Memuat dokumen…</p>}
     {query.error && <p role="alert" className="text-sm text-destructive">{query.error.message}</p>}

@@ -562,6 +562,41 @@ export type Database = {
           },
         ]
       }
+      rab_revisions: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          rab_id: string
+          reason: string
+          revision_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          rab_id: string
+          reason: string
+          revision_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          rab_id?: string
+          reason?: string
+          revision_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rab_revisions_rab_id_fkey"
+            columns: ["rab_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stage_documents: {
         Row: {
           content_type: string
@@ -761,6 +796,8 @@ export type Database = {
           project_name: string
           responsible_name: string
           responsible_position: string
+          revision_number: number
+          signed_locked_at: string | null
           status: string
           vat_included: boolean
           work_duration: string
@@ -785,6 +822,8 @@ export type Database = {
           project_name: string
           responsible_name?: string
           responsible_position?: string
+          revision_number?: number
+          signed_locked_at?: string | null
           status?: string
           vat_included?: boolean
           work_duration?: string
@@ -809,6 +848,8 @@ export type Database = {
           project_name?: string
           responsible_name?: string
           responsible_position?: string
+          revision_number?: number
+          signed_locked_at?: string | null
           status?: string
           vat_included?: boolean
           work_duration?: string
@@ -890,6 +931,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reopen_rab_revision: {
+        Args: { _rab_id: string; _reason: string }
+        Returns: number
       }
       save_rab_finalization_draft: {
         Args: { _draft: Json; _rab_id: string }
