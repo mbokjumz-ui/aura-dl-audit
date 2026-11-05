@@ -15,6 +15,11 @@ function reportColor(token: string) {
 type DispositionHeader = FinalizedRab & { project_name: string; division_location: string; disposition_number: string; responsible_name: string };
 export function createRabDispositionPdf(header: DispositionHeader, items: OpnameItem[], options: { draft?: boolean } = {}) {
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  if (header.revision_number && header.revision_number > 0) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.text(`rev${header.revision_number}`, 16, 10);
+  }
   const margin = 16, width = 178, bottom = 280;
   let y = 22;
   function space(height: number) { if (y + height > bottom) { pdf.addPage(); y = 20; } }

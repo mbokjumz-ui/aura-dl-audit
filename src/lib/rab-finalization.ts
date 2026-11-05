@@ -10,6 +10,8 @@ export const rabFinalizationSchema = z.object({
 });
 export type RabFinalization = z.infer<typeof rabFinalizationSchema>;
 export type FinalizedRab = {
+  revision_number?: number;
+  signed_locked_at?: string | null;
   finalized_at: string | null;
   vat_included: boolean;
   contractor_quotes: unknown;
