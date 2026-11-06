@@ -28,6 +28,9 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
     const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
+    const printAttachment = await buyer.from("rab_print_documents").insert({ rab_id: rabId, file_name: "lampiran.pdf", file_path: `rab-print/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
+    assert.equal(printAttachment.error, null); assert.ok(printAttachment.data);
+    assert.equal((await audit.from("rab_print_documents").select("id").eq("rab_id", rabId)).data?.length, 1);
     const draft = { vatIncluded: true, note: "Draft belum lengkap", contractors: [{ name: "Kontraktor", amount: "" }], approvers: [{ name: "", position: "" }], acknowledgers: [{ name: "", position: "" }], workDays: "", workStartDate: "", downPayment: "30", responsiblePosition: "" };
     for (const client of clients) {
       assert.equal((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error, null);
@@ -64,6 +67,8 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.ok((await buyer.from("stock_opname_projects").update({ status: "selesai", completed_at: new Date().toISOString() }).eq("id", rabId)).error);
     for (const client of clients) {
       assert.ok((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error);
+      assert.ok((await client.from("rab_print_documents").delete().eq("id", printAttachment.data.id)).error);
+      assert.ok((await client.from("rab_print_documents").insert({ rab_id: rabId, file_name: "new.png", file_path: `rab-print/${rabId}/${crypto.randomUUID()}.png`, content_type: "image/png", file_size: 100 })).error);
       assert.ok((await client.from("stock_opname_projects").update({ project_name: "Bypass" }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ finalized_at: null }).eq("id", rabId)).error);
       assert.ok((await client.from("stock_opname_projects").update({ work_start_date: "2026-12-01", work_duration_days: 1 }).eq("id", rabId)).error);
