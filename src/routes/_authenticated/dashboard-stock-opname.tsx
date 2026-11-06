@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/dashboard-stock-opname")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
-  errorComponent: ({ error }) => <div role="alert" className="space-y-3"><p>Dashboard Stock Opname gagal dimuat: {error.message}</p><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div>,
+  errorComponent: ({ error }) => <div role="alert" className="space-y-3"><p>Dashboard Stock Opname gagal dimuat: {error instanceof Error ? error.message : String(error)}</p><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div>,
   notFoundComponent: () => <p>Dashboard Stock Opname tidak ditemukan.</p>,
   component: StockOpnameDashboard,
 });

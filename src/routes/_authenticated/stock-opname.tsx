@@ -22,10 +22,10 @@ import { stockOpnameProjectsQuery } from "@/lib/stock-opname-query";
 import { StockOpnameProgress } from "@/components/StockOpnameProgress";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
-  validateSearch: (search: Record<string, unknown>): { rab?: string } => ({ rab: typeof search.rab === "string" ? search.rab : undefined }),
+  validateSearch: (search: Record<string, unknown>): { rab?: string } => typeof search["rab"] === "string" ? { rab: search["rab"] } : {},
   beforeLoad: requireStockPage,
   loader: ({ context }) => context.queryClient.ensureQueryData(stockOpnameProjectsQuery),
-  errorComponent: ({ error }) => <div role="alert"><p>RAB gagal dimuat: {error.message}</p><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div>,
+  errorComponent: ({ error }) => <div role="alert"><p>RAB gagal dimuat: {error instanceof Error ? error.message : String(error)}</p><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div>,
   notFoundComponent: () => <p>RAB tidak ditemukan.</p>,
   head: () => ({ meta: [
     { title: "Stock Opname Proyek — AURA" },
@@ -44,7 +44,7 @@ function StockOpnamePage() {
   const client = useQueryClient();
   const { rab: selected } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const setSelected = (rab?: string) => navigate({ search: { rab } });
+  const setSelected = (rab?: string) => navigate({ search: rab ? { rab } : {} });
   const [headerForm, setHeaderForm] = useState<(Header & { id?: string }) | null>(null);
   const list = useSuspenseQuery(stockOpnameProjectsQuery);
   const saveHeader = useMutation({ mutationFn: async (f: Header & { id?: string }) => {
