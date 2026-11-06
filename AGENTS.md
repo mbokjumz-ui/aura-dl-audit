@@ -27,7 +27,7 @@
 - Delete whole finalized RABs through an Internal-Audit-authorized server function using privileged deletion and private file cleanup; retain database locks on budget edits and individual final items.
 - Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.
 - Generate stock opname PDFs client-side from the same numbered rows and totals used on screen, including header snapshots, completion status, and attachment filenames; reports must not expose private storage URLs.
-- Finalize disposition metadata atomically through a row-locked wrapper; generate disposition PDFs client-side from shared RAB totals and currency words without altering the Stock Opname report.
+- Finalize disposition atomically; append private rab_print_documents PDF/image pages client-side via pdf-lib for preview/print, lock attachments with RAB, and clean them on deletion; keep Stock Opname reports separate.
 - Finalize structured calendar-day schedules atomically with disposition metadata; derive the end date in the database and use inclusive start-day arithmetic in UI/PDF to keep dates consistent.
 - Link signed RAB PDFs to projects via rab_approval_documents in private stock-opname storage; reuse ArchiveDocuments and clean files on project deletion independently of budget locking.
 - Use shared AttachmentActions for private document previews: fetch short-lived signed files locally, sanitize Word content and render Excel as text, never send private URLs to external document viewers; preserve capability scope checks for auditee access.

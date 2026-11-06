@@ -17,6 +17,7 @@ import { RabFinalizationDialog } from "@/components/RabFinalizationDialog";
 import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
 import { workScheduleLabel } from "@/lib/rab-schedule";
 import { RabRevisionControls } from "@/components/RabRevisionControls";
+import { RabPrintAttachments } from "@/components/RabPrintAttachments";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
   beforeLoad: requireStockPage,
@@ -136,7 +137,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (locked) throw new Error("Hanya Internal Audit dapat menghapus RAB final.");
     const approvals = await supabase.from("rab_approval_documents").select("file_path").eq("rab_id", rab.id);
     if (approvals.error) throw approvals.error;
-    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
+    const printDocuments = await supabase.from("rab_print_documents").select("file_path").eq("rab_id", rab.id);
+    if (printDocuments.error) throw printDocuments.error;
+    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path), ...printDocuments.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
   },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
@@ -163,7 +166,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     setExporting(true);
     try {
       const { rabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
-      rabDispositionPdf(rab, items);
+      await rabDispositionPdf(rab, items);
     } catch (e) { toast.error(e instanceof Error ? e.message : "RAB gagal dicetak."); }
     finally { setExporting(false); }
   }
@@ -246,6 +249,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
     {finalizing && !locked && canFinalize && <RabFinalizationDialog rabId={rab.id} initialRab={rab} items={items} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
     <ArchiveDocuments signedRabId={rab.id} signedUploadAllowed={locked} />
+    {locked && <div className="mt-6"><RabPrintAttachments rabId={rab.id} editable={false} /></div>}
     <Dialog open={!!attachmentItem} onOpenChange={o => !o && setAttachmentItem(null)}>
       <DialogContent><DialogHeader><DialogTitle>Lampiran — {attachmentItem?.description}</DialogTitle></DialogHeader>
         {attachmentItem && <ArchiveDocuments stockItemId={attachmentItem.id} />}

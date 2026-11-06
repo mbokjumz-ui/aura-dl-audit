@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { rabFinalizationSchema, rabDispositionSchema, rabTaxTotals, type FinalizedRab } from "@/lib/rab-finalization";
 import { rabDraftSchema, readRabDraft, draftPreviewValues } from "@/lib/rab-draft";
 import { PdfPreview } from "@/components/PdfPreview";
+import { RabPrintAttachments } from "@/components/RabPrintAttachments";
+import { mergedRabBlob } from "@/lib/rab-attachments-client";
 import { rabScheduleSchema, workEndDate, scheduleDateLabel } from "@/lib/rab-schedule";
 import { rupiah, type OpnameItem } from "@/lib/stock-opname";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
   const [responsiblePosition, setResponsiblePosition] = useState(saved.responsiblePosition);
   const [previewUrl, setPreviewUrl] = useState<string>();
   const [previewing, setPreviewing] = useState(false);
+  const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
   const currentDraft = () => {
     const result = rabDraftSchema.safeParse({ vatIncluded, contractors, approvers, acknowledgers, note, workDays, workStartDate, downPayment, responsiblePosition });
@@ -44,7 +47,7 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
       const values = draftPreviewValues(currentDraft());
       const { createRabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
       const pdf = createRabDispositionPdf({ ...initialRab, ...values }, items, { draft: true });
-      setPreviewUrl(URL.createObjectURL(pdf.output("blob")));
+      setPreviewUrl(URL.createObjectURL(await mergedRabBlob(rabId, pdf.output("arraybuffer"))));
     } catch (e) { toast.error(e instanceof Error ? e.message : "Pratinjau RAB gagal dibuat."); }
     finally { setPreviewing(false); }
   }
@@ -57,11 +60,13 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
     const disposition = rabDispositionSchema.safeParse({ note, workDuration: `${schedule.data.workDays} hari kalender`, downPaymentPercent: downPayment.trim() ? Number(downPayment) : NaN, responsiblePosition });
     if (!disposition.success) throw new Error("Lengkapi lama pekerjaan, jabatan penanggung jawab, dan DP antara 0–100 persen.");
     if (!confirmed) throw new Error("Konfirmasi penguncian RAB terlebih dahulu.");
+    const { createRabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
+    await mergedRabBlob(rabId, createRabDispositionPdf({ ...initialRab, ...draftPreviewValues(currentDraft()) }, items).output("arraybuffer"));
     const { error } = await supabase.rpc("finalize_rab_scheduled_disposition", { _rab_id: rabId, _vat_included: parsed.data.vatIncluded, _contractor_quotes: parsed.data.contractors, _approvers: parsed.data.approvers, _acknowledgers: parsed.data.acknowledgers, _note: disposition.data.note, _work_days: schedule.data.workDays, _work_start_date: schedule.data.workStartDate, _down_payment_percent: disposition.data.downPaymentPercent, _responsible_position: disposition.data.responsiblePosition });
     if (error) throw error;
   }, onSuccess: () => { toast.success("RAB difinalisasi dan dikunci. Revisi dapat dibuka sebelum PDF ditandatangani diunggah."); onFinalized(); onClose(); }, onError: e => toast.error(e.message) });
   const signatories = (title: string, rows: typeof approvers, setRows: typeof setApprovers) => <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">{title}</legend>{rows.map((row, i) => <div key={i} className="flex items-end gap-2"><div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2"><label className="space-y-1 text-sm">Nama {i + 1}<Input required maxLength={150} value={row.name} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, name: e.target.value } : r))} /></label><label className="space-y-1 text-sm">Jabatan {i + 1}<Input required maxLength={150} value={row.position} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, position: e.target.value } : r))} /></label></div>{rows.length > 1 && <Button type="button" size="icon" variant="ghost" title={`Hapus ${title} ${i + 1}`} aria-label={`Hapus ${title} ${i + 1}`} onClick={() => setRows(rows.filter((_, n) => n !== i))}><Trash2 /></Button>}</div>)}{<Button type="button" variant="outline" size="sm" onClick={() => setRows([...rows, { name: "", position: "" }])}><Plus />Tambah {title}</Button>}</fieldset>;
-  const busy = save.isPending || draftSave.isPending || previewing;
+  const busy = save.isPending || draftSave.isPending || previewing || attachmentsBusy;
   return <><Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Finalisasi RAB</DialogTitle><DialogDescription>Anggaran dikunci setelah finalisasi. Revisi dengan alasan hanya dapat dibuka sebelum PDF ditandatangani diunggah. Hasil Stock Opname tetap dapat diisi oleh Internal Audit.</DialogDescription></DialogHeader><form className="space-y-5" onSubmit={e => { e.preventDefault(); save.mutate(); }}><fieldset disabled={busy} className="space-y-5">
     <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => draftSave.mutate()}><Save />{draftSave.isPending ? "Menyimpan…" : "Simpan Draft Finalisasi"}</Button><Button type="button" variant="outline" onClick={preview}><Eye />{previewing ? "Membuat pratinjau…" : "Review Cetakan RAB"}</Button></div>
     <fieldset className="flex flex-wrap gap-4"><legend className="mb-2 text-sm font-semibold">PPN</legend>{[{ value: false, label: "Exclude PPN" }, { value: true, label: "Include PPN 11%" }].map(option => <label key={option.label} className="flex items-center gap-2 text-sm"><input type="radio" name="ppn" checked={vatIncluded === option.value} onChange={() => setVatIncluded(option.value)} />{option.label}</label>)}</fieldset>
@@ -78,6 +83,7 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
       <label className="block space-y-1 text-sm">Jabatan penanggung jawab proyek<Input required maxLength={150} value={responsiblePosition} onChange={e => setResponsiblePosition(e.target.value)} /></label>
     </fieldset>
     {signatories("Menyetujui", approvers, setApprovers)}{signatories("Mengetahui", acknowledgers, setAcknowledgers)}
+    <RabPrintAttachments rabId={rabId} editable disabled={save.isPending || draftSave.isPending || previewing} onBusy={setAttachmentsBusy} />
     <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" required checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />Saya menyatakan RAB sudah benar dan menyetujui penguncian anggaran.</label><div className="flex flex-wrap justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Tutup</Button><Button disabled={!confirmed || busy}><LockKeyhole />{save.isPending ? "Memfinalisasi…" : "Finalisasi & Kunci RAB"}</Button></div>
   </fieldset></form></DialogContent></Dialog><Dialog open={!!previewUrl} onOpenChange={open => { if (!open) setPreviewUrl(undefined); }}><DialogContent className="flex h-[90dvh] min-w-0 flex-col sm:max-w-4xl"><DialogHeader><DialogTitle>Review Cetakan RAB · Draft</DialogTitle><DialogDescription>{initialRab.project_name}</DialogDescription></DialogHeader>{previewUrl && <PdfPreview key={previewUrl} url={previewUrl} />}</DialogContent></Dialog></>;
 }

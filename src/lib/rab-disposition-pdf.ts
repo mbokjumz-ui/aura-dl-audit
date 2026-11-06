@@ -5,6 +5,7 @@ import { readRabFinalization, type FinalizedRab } from "./rab-finalization";
 import { rupiah, type OpnameItem } from "./stock-opname";
 import reportStyles from "../styles.css?raw";
 import { workScheduleLabel } from "./rab-schedule";
+import { mergedRabBlob } from "./rab-attachments-client";
 
 function reportColor(token: string) {
   const color = reportStyles.match(new RegExp(`--report-table-${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
@@ -106,7 +107,11 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
   y = start + height;
   return pdf;
 }
-export function rabDispositionPdf(header: DispositionHeader, items: OpnameItem[]) {
+export async function rabDispositionPdf(header: DispositionHeader & { id: string }, items: OpnameItem[]) {
   const name = header.project_name.replace(/[^\p{L}\p{N} _-]/gu, "").slice(0, 80) || "Project";
-  createRabDispositionPdf(header, items).save(`Permohonan Disposisi - ${name}.pdf`);
+  const blob = await mergedRabBlob(header.id, createRabDispositionPdf(header, items).output("arraybuffer"));
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a"); link.href = url; link.download = `Permohonan Disposisi - ${name}.pdf`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
