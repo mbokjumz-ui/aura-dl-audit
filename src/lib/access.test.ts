@@ -2,8 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { canAccessPath, canEnterActual, canFinalizeRab, canDeleteFinalRab, roleHome } from "./access";
 
-test("Pembelian hanya dapat mengakses Stock Opname", () => {
+test("Pembelian dapat mengakses Stock Opname dan dashboard khususnya", () => {
   assert.equal(canAccessPath("purchasing", "/stock-opname"), true);
+  assert.equal(canAccessPath("purchasing", "/dashboard-stock-opname"), true);
+  assert.equal(canAccessPath("internal_audit", "/dashboard-stock-opname"), true);
+  assert.equal(canAccessPath(null, "/dashboard-stock-opname"), false);
   for (const path of ["/dashboard", "/proyek", "/proyek/123", "/auditor", "/arsip", "/arsip-iso", "/tindak-lanjut", "/akun-pembelian"]) assert.equal(canAccessPath("purchasing", path), false);
 });
 test("Hanya Internal Audit dapat memasukkan angka riil", () => {

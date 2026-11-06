@@ -5,7 +5,7 @@ export function roleHome(role: AppRole | null) {
 }
 
 export function canAccessPath(role: AppRole | null, path: string) {
-  return role === "internal_audit" || (role === "purchasing" && path === "/stock-opname");
+  return role === "internal_audit" || (role === "purchasing" && ["/stock-opname", "/dashboard-stock-opname"].includes(path));
 }
 
 export function canEnterActual(role: AppRole | null) {

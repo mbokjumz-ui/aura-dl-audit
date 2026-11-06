@@ -32,6 +32,13 @@ export function rabTotals(items: OpnameItem[]) {
   return { rab, actual, difference: Math.round((actual - rab) * 100) / 100, counted, total: rows.length };
 }
 
+/** Compare the same pre-tax line amounts; null is uncounted, zero is a recorded result. */
+export function opnameProgress(items: OpnameItem[]) {
+  const totals = rabTotals(items);
+  const percent = (value: number, total: number) => total > 0 ? Math.round(value / total * 1000) / 10 : 0;
+  return { ...totals, amountPercent: percent(totals.actual, totals.rab), itemPercent: percent(totals.counted, totals.total) };
+}
+
 export function groupAmount(children: OpnameItem[], field: "quantity" | "actual_quantity") {
   return children.reduce((s, c) => s + lineAmount(c[field] ?? 0, c.unit_price), 0);
 }
