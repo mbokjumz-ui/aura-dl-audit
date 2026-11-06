@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { to: "/arsip-iso", label: "Arsip ISO", icon: FileCheck2 },
   { to: "/tindak-lanjut", label: "Tindak Lanjut", icon: ListChecks },
   { to: "/stock-opname", label: "Stock Opname", icon: Calculator },
+  { to: "/dashboard-stock-opname", label: "Dashboard Stock Opname", icon: LayoutDashboard },
   { to: "/akun-pembelian", label: "Akun Pembelian", icon: Users },
 ] as const;
 
@@ -23,7 +24,7 @@ export function AppShell() {
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const role = useQuery({ queryKey: ["app-role"], queryFn: readAppRole });
-  const navItems = role.data === "internal_audit" ? NAV_ITEMS : role.data === "purchasing" ? NAV_ITEMS.filter(item => item.to === "/stock-opname") : [];
+  const navItems = role.data === "internal_audit" ? NAV_ITEMS : role.data === "purchasing" ? NAV_ITEMS.filter(item => item.to === "/stock-opname" || item.to === "/dashboard-stock-opname") : [];
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -93,7 +94,7 @@ export function AppShell() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex min-w-16 flex-1 flex-col items-center gap-1 whitespace-nowrap px-1 py-2.5 text-[11px] font-medium",
+                  "flex min-w-20 flex-1 flex-col items-center gap-1 whitespace-nowrap px-2 py-2.5 text-[11px] font-medium",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
