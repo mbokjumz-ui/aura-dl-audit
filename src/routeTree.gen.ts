@@ -19,6 +19,7 @@ import { Route as AuthenticatedArsipRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedArsipIsoRouteImport } from './routes/_authenticated/arsip-iso'
 import { Route as AuthenticatedAuditorRouteImport } from './routes/_authenticated/auditor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDashboardStockOpnameRouteImport } from './routes/_authenticated/dashboard-stock-opname'
 import { Route as AuthenticatedProyekRouteRouteImport } from './routes/_authenticated/proyek/route'
 import { Route as AuthenticatedStockOpnameRouteImport } from './routes/_authenticated/stock-opname'
 import { Route as AuthenticatedTindakLanjutRouteImport } from './routes/_authenticated/tindak-lanjut'
@@ -75,6 +76,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDashboardStockOpnameRoute =
+  AuthenticatedDashboardStockOpnameRouteImport.update({
+    id: '/dashboard-stock-opname',
+    path: '/dashboard-stock-opname',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProyekRouteRoute =
   AuthenticatedProyekRouteRouteImport.update({
     id: '/proyek',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-stock-opname': typeof AuthenticatedDashboardStockOpnameRoute
   '/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/auditor': typeof AuthenticatedAuditorRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-stock-opname': typeof AuthenticatedDashboardStockOpnameRoute
   '/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/arsip-iso': typeof AuthenticatedArsipIsoRoute
   '/_authenticated/auditor': typeof AuthenticatedAuditorRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard-stock-opname': typeof AuthenticatedDashboardStockOpnameRoute
   '/_authenticated/stock-opname': typeof AuthenticatedStockOpnameRoute
   '/_authenticated/tindak-lanjut': typeof AuthenticatedTindakLanjutRoute
   '/_authenticated/proyek/$projectId': typeof AuthenticatedProyekProjectIdRoute
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/dashboard-stock-opname'
     | '/stock-opname'
     | '/tindak-lanjut'
     | '/proyek/$projectId'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/arsip-iso'
     | '/auditor'
     | '/dashboard'
+    | '/dashboard-stock-opname'
     | '/stock-opname'
     | '/tindak-lanjut'
     | '/proyek/$projectId'
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/arsip-iso'
     | '/_authenticated/auditor'
     | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard-stock-opname'
     | '/_authenticated/stock-opname'
     | '/_authenticated/tindak-lanjut'
     | '/_authenticated/proyek/$projectId'
@@ -286,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dashboard-stock-opname': {
+      id: '/_authenticated/dashboard-stock-opname'
+      path: '/dashboard-stock-opname'
+      fullPath: '/dashboard-stock-opname'
+      preLoaderRoute: typeof AuthenticatedDashboardStockOpnameRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/proyek': {
       id: '/_authenticated/proyek'
       path: '/proyek'
@@ -347,6 +367,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArsipIsoRoute: typeof AuthenticatedArsipIsoRoute
   AuthenticatedAuditorRoute: typeof AuthenticatedAuditorRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardStockOpnameRoute: typeof AuthenticatedDashboardStockOpnameRoute
   AuthenticatedStockOpnameRoute: typeof AuthenticatedStockOpnameRoute
   AuthenticatedTindakLanjutRoute: typeof AuthenticatedTindakLanjutRoute
 }
@@ -358,6 +379,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArsipIsoRoute: AuthenticatedArsipIsoRoute,
   AuthenticatedAuditorRoute: AuthenticatedAuditorRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardStockOpnameRoute:
+    AuthenticatedDashboardStockOpnameRoute,
   AuthenticatedStockOpnameRoute: AuthenticatedStockOpnameRoute,
   AuthenticatedTindakLanjutRoute: AuthenticatedTindakLanjutRoute,
 }
