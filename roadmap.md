@@ -44,3 +44,5 @@
 - [x] Uji revisi dan penguncian akhir untuk Internal Audit dan Pembelian.
 - [x] Tambahkan lampiran PDF/gambar saat finalisasi, gabungkan pada pratinjau dan cetak RAB, serta bersihkan saat RAB dihapus.
 - [x] Uji urutan halaman, penyimpanan lampiran dan pembatasan setelah finalisasi.
+- [ ] Tambahkan progres nilai dan jumlah item opname pada proyek.
+- [ ] Tambahkan dashboard Stock Opname untuk Internal Audit dan Pembelian, serta uji perhitungan dan tampilan.
