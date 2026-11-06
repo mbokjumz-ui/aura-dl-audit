@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lineAmount, rabTotals, numberedRabRows, opnameCompletion, type OpnameItem } from "./stock-opname";
+import { lineAmount, rabTotals, numberedRabRows, opnameCompletion, opnameProgress, type OpnameItem } from "./stock-opname";
 
 const item = (p: Partial<OpnameItem>): OpnameItem => ({ id: "x", parent_id: null, description: "", quantity: 0, unit: "", unit_price: 0, actual_quantity: null, sort_order: 0, ...p });
 
@@ -34,4 +34,28 @@ test("total counts only details, not their parent point, and compares opname to 
   assert.equal(t.difference, -5000);
   assert.equal(t.counted, 2);
   assert.equal(t.total, 3);
+});
+
+test("progres nilai adalah amount opname dibagi amount RAB, tanpa menggandakan induk", () => {
+  const p = opnameProgress([
+    item({ id: "parent", quantity: 100, unit_price: 9000 }),
+    item({ id: "a", parent_id: "parent", quantity: 10, unit_price: 1000, actual_quantity: 5 }),
+    item({ id: "b", parent_id: "parent", quantity: 5, unit_price: 2000 }),
+  ]);
+  assert.equal(p.rab, 20000);
+  assert.equal(p.actual, 5000);
+  assert.equal(p.amountPercent, 25);
+});
+
+test("progres item menghitung jumlah riil nol sebagai sudah diopname, bukan item kosong", () => {
+  const p = opnameProgress([item({ id: "a", actual_quantity: 0 }), item({ id: "b", actual_quantity: null }), item({ id: "c", actual_quantity: 2 }), item({ id: "d", actual_quantity: null })]);
+  assert.equal(p.itemPercent, 50);
+  assert.equal(p.counted, 2);
+  assert.equal(p.total, 4);
+});
+
+test("progres RAB kosong atau tanpa nilai aman dan hasil lebih dari RAB tetap terlihat", () => {
+  assert.equal(opnameProgress([]).itemPercent, 0);
+  assert.equal(opnameProgress([item({ actual_quantity: 2 })]).amountPercent, 0);
+  assert.equal(opnameProgress([item({ quantity: 2, unit_price: 1000, actual_quantity: 3 })]).amountPercent, 150);
 });

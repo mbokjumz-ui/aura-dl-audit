@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteAuditRab } from "@/lib/stock-opname.functions";
@@ -18,9 +18,15 @@ import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-
 import { workScheduleLabel } from "@/lib/rab-schedule";
 import { RabRevisionControls } from "@/components/RabRevisionControls";
 import { RabPrintAttachments } from "@/components/RabPrintAttachments";
+import { stockOpnameProjectsQuery } from "@/lib/stock-opname-query";
+import { StockOpnameProgress } from "@/components/StockOpnameProgress";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
+  validateSearch: (search: Record<string, unknown>): { rab?: string } => typeof search["rab"] === "string" ? { rab: search["rab"] } : {},
   beforeLoad: requireStockPage,
+  loader: ({ context }) => context.queryClient.ensureQueryData(stockOpnameProjectsQuery),
+  errorComponent: ({ error }) => <div role="alert"><p>RAB gagal dimuat: {error instanceof Error ? error.message : String(error)}</p><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div>,
+  notFoundComponent: () => <p>RAB tidak ditemukan.</p>,
   head: () => ({ meta: [
     { title: "Stock Opname Proyek — AURA" },
     { name: "description", content: "Susun RAB proyek dan cocokkan dengan hasil stock opname di AURA." },
@@ -36,13 +42,11 @@ type Header = { project_name: string; division_location: string; disposition_num
 
 function StockOpnamePage() {
   const client = useQueryClient();
-  const [selected, setSelected] = useState<string>();
+  const { rab: selected } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const setSelected = (rab?: string) => navigate({ search: rab ? { rab } : {} });
   const [headerForm, setHeaderForm] = useState<(Header & { id?: string }) | null>(null);
-  const list = useQuery({ queryKey: ["stock-opname-projects"], queryFn: async () => {
-    const { data, error } = await supabase.from("stock_opname_projects").select("*, stock_opname_items(*)").order("created_at", { ascending: false });
-    if (error) throw error;
-    return data;
-  }});
+  const list = useSuspenseQuery(stockOpnameProjectsQuery);
   const saveHeader = useMutation({ mutationFn: async (f: Header & { id?: string }) => {
     if (!f.project_name.trim()) throw new Error("Nama proyek wajib diisi.");
     const values = { project_name: f.project_name.trim(), division_location: f.division_location.trim(), disposition_number: f.disposition_number.trim(), responsible_name: f.responsible_name.trim(), auditor_name: f.auditor_name.trim() };
@@ -57,14 +61,15 @@ function StockOpnamePage() {
   return <div>
     {active ? <RabDetail rab={active} items={active.stock_opname_items as OpnameItem[]} onBack={() => setSelected(undefined)} onEdit={() => setHeaderForm({ ...active })} />
     : <>
-      <div className="mb-7 flex items-center justify-between gap-3"><h1 className="font-display text-3xl md:text-4xl">Stock Opname Proyek</h1>
-        <Button onClick={() => setHeaderForm({ project_name: "", division_location: "", disposition_number: "", responsible_name: "", auditor_name: "" })}><Plus />Buat RAB</Button></div>
-      {list.isLoading ? <p className="text-muted-foreground">Memuat…</p> : !list.data?.length ? <p className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">Belum ada RAB. Mulai dengan membuat RAB proyek.</p> :
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3"><h1 className="font-display text-3xl md:text-4xl">Stock Opname Proyek</h1>
+        <div className="flex flex-wrap gap-2"><Button variant="outline" asChild><Link to="/dashboard-stock-opname">Dashboard Stock Opname</Link></Button><Button onClick={() => setHeaderForm({ project_name: "", division_location: "", disposition_number: "", responsible_name: "", auditor_name: "" })}><Plus />Buat RAB</Button></div></div>
+      {!list.data?.length ? <p className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">Belum ada RAB. Mulai dengan membuat RAB proyek.</p> :
       <div className="grid gap-3 md:grid-cols-2">{list.data.map(p => { const t = rabTotals(p.stock_opname_items as OpnameItem[]); return (
          <Button variant="outline" key={p.id} onClick={() => setSelected(p.id)} className="h-auto min-w-0 flex-col items-stretch whitespace-normal rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary">
            <div className="flex items-start justify-between gap-3"><p className="break-words font-medium">{p.project_name}</p><span className="shrink-0 text-xs text-primary">{p.status === "selesai" ? "Selesai" : "Berjalan"}</span></div>
           <p className="mt-1 text-xs text-muted-foreground">{p.division_location || "—"} · Disposisi {p.disposition_number || "—"}</p>
           <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabTaxTotals(t.rab, p.vat_included).total)}{p.finalized_at ? " · Final" : " · Draft"}{p.revision_number > 0 ? ` · rev${p.revision_number}` : ""}{p.signed_locked_at ? " · Ditandatangani" : ""}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
+          <div className="mt-4 w-full border-t border-border pt-4"><StockOpnameProgress items={p.stock_opname_items} /></div>
          </Button>); })}</div>}
     </>}
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
@@ -221,6 +226,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       <Stat label={`Hasil opname (${totals.counted}/${totals.total})`} value={rupiah(totals.actual)} />
       <Stat label="Selisih" value={rupiah(totals.difference)} className={diffClass(totals.difference)} />
     </div>
+    <section aria-label="Progres stock opname proyek" className="mb-6 border-y border-border py-4"><StockOpnameProgress items={items} /></section>
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
       <div className="inline-flex rounded-lg border border-border p-1">
         <Button size="sm" variant={tab === "rab" ? "default" : "ghost"} onClick={() => setTab("rab")}>1. RAB</Button>
