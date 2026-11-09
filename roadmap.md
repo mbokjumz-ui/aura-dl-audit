@@ -46,3 +46,4 @@
 - [x] Uji urutan halaman, penyimpanan lampiran dan pembatasan setelah finalisasi.
 - [x] Tambahkan progres nilai dan jumlah item opname pada proyek.
 - [x] Tambahkan dashboard Stock Opname untuk Internal Audit dan Pembelian, serta uji perhitungan dan tampilan.
+- [x] Izinkan uraian/detail beberapa baris per poin dan sub-poin RAB dengan tambah baris manual; verifikasi penyimpanan, tabel, dan cetakan.
