@@ -41,7 +41,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
     const tablePdf = pdf as jsPDF & { lastAutoTable?: { finalY: number } };
     y = (tablePdf.lastAutoTable?.finalY ?? y) + 8;
   }
-  const { rows, totals } = dispositionAmounts(items, header.vat_included);
+  const { rows, totals } = dispositionAmounts(items, header.vat_included, header);
   const details = readRabFinalization(header);
   text("PERMOHONAN DISPOSISI PROYEK", true, true);
   text(header.disposition_number || "-", true, true);
@@ -54,7 +54,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
   table({
     head: [["No.", "Uraian pengerjaan", "Jumlah", "Satuan", "Nilai (Rp)", "Amount (Rp)"]],
     body: rows.map(({ number, item, children, level, amount }) => [number, `${level ? "   " : ""}${item.description}`, children.length ? "" : item.quantity.toLocaleString("id-ID"), children.length ? "" : item.unit, children.length ? "" : rupiah(item.unit_price), rupiah(amount)]),
-    foot: [["", "Total sebelum PPN", "", "", "", rupiah(totals.subtotal)], ["", header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", "", "", "", rupiah(totals.ppn)], ["", "Total akhir RAB", "", "", "", rupiah(totals.total)]],
+    foot: [["", "Total sebelum PPN", "", "", "", rupiah(totals.subtotal)], ...(totals.discount > 0 ? [["", header.discount_type === "percent" ? `Diskon (${header.discount_value}%)` : "Diskon", "", "", "", `-${rupiah(totals.discount)}`], ["", "Total setelah diskon sebelum PPN", "", "", "", rupiah(totals.netSubtotal)]] : []), ["", header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", "", "", "", rupiah(totals.ppn)], ["", "Total akhir RAB", "", "", "", rupiah(totals.total)]],
     showFoot: "lastPage", columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 62 }, 2: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
     didParseCell: (data) => {
       if (data.section === "body" && rows[data.row.index]?.children.length) {

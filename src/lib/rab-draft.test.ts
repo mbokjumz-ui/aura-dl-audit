@@ -16,3 +16,11 @@ test("preview uses current draft values and does not finalize", () => {
   assert.equal(preview.work_end_date, "2026-11-17");
   assert.equal(preview.down_payment_percent, 30);
 });
+test("Diskon rupiah dan persen tersimpan dalam draft dan diteruskan ke pratinjau", () => {
+  for (const discountType of ["rupiah", "percent"] as const) {
+    const draft = { ...readRabDraft(initial), discountType, discountValue: "10" };
+    assert.equal(readRabDraft({ ...initial, finalization_draft: draft }).discountValue, "10");
+    assert.equal(draftPreviewValues(draft).discount_type, discountType);
+    assert.equal(draftPreviewValues(draft).discount_value, 10);
+  }
+});

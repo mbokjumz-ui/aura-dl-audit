@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { requireStockPage } from "@/lib/access-client";
 import { canEnterActual, canFinalizeRab, canDeleteFinalRab } from "@/lib/access";
 import { RabFinalizationDialog } from "@/components/RabFinalizationDialog";
-import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
+import { rabDiscountTotals, readRabFinalization, type FinalizedRab } from "@/lib/rab-finalization";
 import { workScheduleLabel } from "@/lib/rab-schedule";
 import { RabRevisionControls } from "@/components/RabRevisionControls";
 import { RabPrintAttachments } from "@/components/RabPrintAttachments";
@@ -69,7 +69,7 @@ function StockOpnamePage() {
          <Button variant="outline" key={p.id} onClick={() => setSelected(p.id)} className="h-auto min-w-0 flex-col items-stretch whitespace-normal rounded-lg border border-border bg-card p-5 text-left transition-colors hover:border-primary">
            <div className="flex items-start justify-between gap-3"><p className="break-words font-medium">{p.project_name}</p><span className="shrink-0 text-xs text-primary">{p.status === "selesai" ? "Selesai" : "Berjalan"}</span></div>
           <p className="mt-1 text-xs text-muted-foreground">{p.division_location || "—"} · Disposisi {p.disposition_number || "—"}</p>
-          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabTaxTotals(t.rab, p.vat_included).total)}{p.finalized_at ? " · Final" : " · Draft"}{p.revision_number > 0 ? ` · rev${p.revision_number}` : ""}{p.signed_locked_at ? " · Ditandatangani" : ""}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
+          <div className="mt-3 flex flex-wrap justify-between gap-2 text-sm"><span>RAB {rupiah(rabDiscountTotals(t.rab, p.vat_included, p).total)}{p.finalized_at ? " · Final" : " · Draft"}{p.revision_number > 0 ? ` · rev${p.revision_number}` : ""}{p.signed_locked_at ? " · Ditandatangani" : ""}</span><span className="text-muted-foreground">Opname {t.counted}/{t.total} detil</span></div>
           <div className="mt-4 w-full border-t border-border pt-4"><StockOpnameProgress items={p.stock_opname_items} /></div>
          </Button>); })}</div>}
     </>}
@@ -111,7 +111,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const refresh = () => client.invalidateQueries({ queryKey: ["stock-opname-projects"] });
   const rows = numberedRabRows(items);
   const totals = rabTotals(items);
-  const taxTotals = rabTaxTotals(totals.rab, rab.vat_included);
+  const taxTotals = rabDiscountTotals(totals.rab, rab.vat_included, rab);
   const finalDetails = readRabFinalization(rab);
   const hasChildren = (id?: string) => !!id && items.some(i => i.parent_id === id);
 
@@ -252,7 +252,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         </tr></tfoot>
       </table>
     </div>
-    <dl className="ml-auto mt-4 max-w-sm space-y-2 text-sm"><div className="flex justify-between gap-3"><dt>Total sebelum PPN</dt><dd>{rupiah(totals.rab)}</dd></div><div className="flex justify-between gap-3"><dt>PPN {rab.vat_included ? "11%" : "(Exclude)"}</dt><dd>{rupiah(taxTotals.ppn)}</dd></div><div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(taxTotals.total)}</dd></div></dl>
+    <dl className="ml-auto mt-4 max-w-sm space-y-2 text-sm"><div className="flex justify-between gap-3"><dt>Total sebelum PPN</dt><dd>{rupiah(totals.rab)}</dd></div>{taxTotals.discount > 0 && <><div className="flex justify-between gap-3"><dt>Diskon{rab.discount_type === "percent" ? ` (${rab.discount_value}%)` : ""}</dt><dd>−{rupiah(taxTotals.discount)}</dd></div><div className="flex justify-between gap-3"><dt>Total setelah diskon sebelum PPN</dt><dd>{rupiah(taxTotals.netSubtotal)}</dd></div></>}<div className="flex justify-between gap-3"><dt>PPN {rab.vat_included ? "11%" : "(Exclude)"}</dt><dd>{rupiah(taxTotals.ppn)}</dd></div><div className="flex justify-between gap-3 border-t border-border pt-2 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(taxTotals.total)}</dd></div></dl>
     {locked && <dl className="mt-5 space-y-2 border-t border-border pt-4 text-sm"><div><dt className="font-semibold">Note</dt><dd className="whitespace-pre-wrap break-words">{rab.disposition_note || "—"}</dd></div><div><dt className="font-semibold">Lama pekerjaan</dt><dd>{workScheduleLabel(rab)}</dd></div><div><dt className="font-semibold">Pembayaran DP</dt><dd>{(rab.down_payment_percent ?? 0).toLocaleString("id-ID")}%</dd></div><div><dt className="font-semibold">Jabatan penanggung jawab</dt><dd>{rab.responsible_position || "—"}</dd></div></dl>}
     {locked && finalDetails && <section className="mt-7 space-y-5 border-t border-border pt-5"><div><h2 className="mb-3 font-semibold">Perbandingan penawaran sebelum PPN</h2><ul className="divide-y divide-border">{finalDetails.contractors.map((c, i) => <li key={i} className="flex flex-wrap justify-between gap-3 py-2"><span className="break-words">{i + 1}. {c.name}</span><span className="tabular-nums">{rupiah(c.amount)}</span></li>)}</ul></div><div className="grid gap-5 sm:grid-cols-2">{[{ title: "Menyetujui", rows: finalDetails.approvers }, { title: "Mengetahui", rows: finalDetails.acknowledgers }].map(group => <div key={group.title}><h2 className="mb-2 font-semibold">{group.title}</h2>{group.rows.map((person, i) => <p key={i} className="mb-2 break-words text-sm">{person.name}<span className="block text-muted-foreground">{person.position}</span></p>)}</div>)}</div></section>}
     {finalizing && !locked && canFinalize && <RabFinalizationDialog rabId={rab.id} initialRab={rab} items={items} subtotal={totals.rab} onClose={() => setFinalizing(false)} onFinalized={() => { setForm(null); refresh(); }} />}
