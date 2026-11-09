@@ -1,5 +1,5 @@
 import { numberedRabRows, groupAmount, lineAmount, rabTotals, type OpnameItem } from "./stock-opname";
-import { rabTaxTotals } from "./rab-finalization";
+import { rabDiscountTotals, type FinalizedRab } from "./rab-finalization";
 
 const digits = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
 function integerWords(n: number): string {
@@ -21,9 +21,9 @@ export function rupiahWords(value: number) {
   const words = `${whole === 0 ? "nol" : integerWords(whole)} rupiah${fraction ? ` ${integerWords(fraction)} sen` : ""}`;
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
-export function dispositionAmounts(items: OpnameItem[], vatIncluded: boolean) {
+export function dispositionAmounts(items: OpnameItem[], vatIncluded: boolean, discount: Pick<FinalizedRab, "discount_type" | "discount_value"> = {}) {
   return {
     rows: numberedRabRows(items).map(row => ({ ...row, amount: row.children.length ? groupAmount(row.children, "quantity") : lineAmount(row.item.quantity, row.item.unit_price) })),
-    totals: rabTaxTotals(rabTotals(items).rab, vatIncluded),
+    totals: rabDiscountTotals(rabTotals(items).rab, vatIncluded, discount),
   };
 }

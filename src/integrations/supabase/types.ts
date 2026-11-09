@@ -824,6 +824,8 @@ export type Database = {
           completed_at: string | null
           contractor_quotes: Json
           created_at: string
+          discount_type: string
+          discount_value: number
           disposition_note: string
           disposition_number: string
           division_location: string
@@ -850,6 +852,8 @@ export type Database = {
           completed_at?: string | null
           contractor_quotes?: Json
           created_at?: string
+          discount_type?: string
+          discount_value?: number
           disposition_note?: string
           disposition_number?: string
           division_location?: string
@@ -876,6 +880,8 @@ export type Database = {
           completed_at?: string | null
           contractor_quotes?: Json
           created_at?: string
+          discount_type?: string
+          discount_value?: number
           disposition_note?: string
           disposition_number?: string
           division_location?: string
@@ -920,6 +926,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finalize_rab_discounted_disposition: {
+        Args: {
+          _acknowledgers: Json
+          _approvers: Json
+          _contractor_quotes: Json
+          _discount_type: string
+          _discount_value: number
+          _down_payment_percent: number
+          _note: string
+          _rab_id: string
+          _responsible_position: string
+          _vat_included: boolean
+          _work_days: number
+          _work_start_date: string
+        }
+        Returns: undefined
+      }
       finalize_rab_disposition: {
         Args: {
           _acknowledgers: Json

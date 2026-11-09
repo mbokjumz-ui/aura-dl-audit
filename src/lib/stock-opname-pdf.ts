@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { numberedRabRows, groupAmount, lineAmount, rabTotals, rupiah, type OpnameItem } from "./stock-opname";
-import { rabTaxTotals, readRabFinalization, type FinalizedRab } from "./rab-finalization";
+import { rabDiscountTotals, readRabFinalization, type FinalizedRab } from "./rab-finalization";
 
 type ReportHeader = {
   project_name: string; division_location: string; disposition_number: string;
@@ -39,8 +39,8 @@ export function stockOpnamePdf(header: ReportHeader, items: OpnameItem[], docume
       pdf.text(`AURA | Halaman ${pdf.getNumberOfPages()}`, 14, pdf.internal.pageSize.getHeight() - 8);
     },
   });
-  const tax = rabTaxTotals(totals.rab, header.vat_included);
-  autoTable(pdf, { theme: "plain", styles: { fontSize: 10 }, body: [["Total RAB sebelum PPN", rupiah(tax.subtotal)], [header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", rupiah(tax.ppn)], ["Total akhir RAB", rupiah(tax.total)]] });
+  const tax = rabDiscountTotals(totals.rab, header.vat_included, header);
+  autoTable(pdf, { theme: "plain", styles: { fontSize: 10 }, body: [["Total RAB sebelum PPN", rupiah(tax.subtotal)], ...(tax.discount > 0 ? [[header.discount_type === "percent" ? `Diskon (${header.discount_value}%)` : "Diskon", `-${rupiah(tax.discount)}`], ["Total setelah diskon sebelum PPN", rupiah(tax.netSubtotal)]] : []), [header.vat_included ? "PPN 11% (Include)" : "PPN (Exclude)", rupiah(tax.ppn)], ["Total akhir RAB", rupiah(tax.total)]] });
   const details = readRabFinalization(header);
   if (details) {
     autoTable(pdf, { theme: "grid", styles: { fontSize: 10 }, head: [["Kontraktor", "Penawaran sebelum PPN"]], body: details.contractors.map(c => [c.name, rupiah(c.amount)]) });

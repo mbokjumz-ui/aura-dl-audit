@@ -34,3 +34,5 @@
 - Store access roles in protected user_roles; existing accounts are backfilled as internal audit and new accounts receive no role automatically, preventing public signup privilege escalation.
 - Guard audit pages by role beneath the managed authentication gate, enforce the same boundary with restrictive RLS on audit data/files, and protect actual opname values and completion through database triggers to prevent bypass via direct requests or cascades.
 - Create and delete purchasing accounts only through internal-audit-authorized server functions; verify the deletion target has only purchasing access and is not the caller before deleting the auth user; admin-created purchasing accounts are confirmed immediately; keep profile names separate from roles.
+
+- Persist RAB discount mode/value with atomic scheduled finalization and validate it on direct writes; compute discount before VAT in shared summaries/PDFs while keeping raw leaf amounts and opname progress unchanged.
