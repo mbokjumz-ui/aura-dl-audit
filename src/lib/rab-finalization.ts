@@ -10,6 +10,8 @@ export const rabFinalizationSchema = z.object({
 });
 export type RabFinalization = z.infer<typeof rabFinalizationSchema>;
 export type FinalizedRab = {
+  discount_type?: string;
+  discount_value?: number;
   revision_number?: number;
   signed_locked_at?: string | null;
   finalized_at: string | null;
@@ -38,4 +40,19 @@ export function rabTaxTotals(subtotal: number, included: boolean) {
 export function readRabFinalization(rab: FinalizedRab): RabFinalization | null {
   const parsed = rabFinalizationSchema.safeParse({ vatIncluded: rab.vat_included, contractors: rab.contractor_quotes, approvers: rab.approvers, acknowledgers: rab.acknowledgers });
   return parsed.success ? parsed.data : null;
+}
+export const rabDiscountSchema = z.object({
+  discountType: z.enum(["rupiah", "percent"]),
+  discountValue: z.number().finite().min(0).max(100000000000000),
+}).refine(v => v.discountType !== "percent" || v.discountValue <= 100);
+export function validateRabDiscount(subtotal: number, discountType: "rupiah" | "percent", discountValue: number) {
+  const parsed = rabDiscountSchema.safeParse({ discountType, discountValue });
+  if (!parsed.success || (discountType === "rupiah" && discountValue > subtotal)) throw new Error("Diskon harus 0–100% atau rupiah tidak melebihi total RAB sebelum PPN.");
+  return parsed.data;
+}
+export function rabDiscountTotals(subtotal: number, included: boolean, rab: Pick<FinalizedRab, "discount_type" | "discount_value"> = {}) {
+  const value = rab.discount_value ?? 0;
+  const discount = Math.round((rab.discount_type === "percent" ? subtotal * value / 100 : value) * 100) / 100;
+  const netSubtotal = Math.round((subtotal - discount) * 100) / 100;
+  return { ...rabTaxTotals(netSubtotal, included), subtotal, discount, netSubtotal };
 }
