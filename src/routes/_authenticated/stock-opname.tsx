@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteAuditRab } from "@/lib/stock-opname.functions";
 import { ArrowLeft, Plus, Pencil, Trash2, CornerDownRight, Paperclip, FileDown, CheckCircle2, RotateCcw, LockKeyhole } from "lucide-react";
@@ -10,6 +10,7 @@ import { groupAmount, lineAmount, rabTotals, numberedRabRows, opnameCompletion, 
 import { ArchiveDocuments } from "@/components/ArchiveDocuments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { requireStockPage } from "@/lib/access-client";
 import { canEnterActual, canFinalizeRab, canDeleteFinalRab } from "@/lib/access";
@@ -102,6 +103,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const client = useQueryClient();
   const [tab, setTab] = useState<"rab" | "opname">("rab");
   const [form, setForm] = useState<ItemForm | null>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [attachmentItem, setAttachmentItem] = useState<OpnameItem | null>(null);
   const [exporting, setExporting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
@@ -184,7 +186,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     const actAmt = group ? groupAmount(group, "actual_quantity") : i.actual_quantity === null ? null : lineAmount(i.actual_quantity, i.unit_price);
     return <tr key={i.id} className={group ? "bg-muted/40 font-medium" : ""}>
       <td className="p-2 align-top tabular-nums">{number}</td>
-      <td className="p-2"><span className={`flex items-start gap-1 ${level > 0 ? "pl-4" : ""}`}>{level > 0 && <CornerDownRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />}{i.description}</span></td>
+      <td className="p-2"><span className={`flex items-start gap-1 ${level > 0 ? "pl-4" : ""}`}>{level > 0 && <CornerDownRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />}<span className="min-w-0 whitespace-pre-wrap break-words">{i.description}</span></span></td>
       <td className="p-2 text-right">{group ? "" : i.quantity.toLocaleString("id-ID")}</td>
       <td className="p-2">{group ? "" : i.unit}</td>
       <td className="p-2 text-right">{group ? "" : rupiah(i.unit_price)}</td>
@@ -262,9 +264,16 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       </DialogContent>
     </Dialog>
     <Dialog open={!!form} onOpenChange={o => !o && setForm(null)}>
-      <DialogContent><DialogHeader><DialogTitle>{form?.id ? "Edit" : "Tambah"} {form?.parent_id ? "Sub-poin" : "Poin"} Pengerjaan</DialogTitle></DialogHeader>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{form?.id ? "Edit" : "Tambah"} {form?.parent_id ? "Sub-poin" : "Poin"} Pengerjaan</DialogTitle></DialogHeader>
         {form && <form className="space-y-3" onSubmit={e => { e.preventDefault(); saveItem.mutate(form); }}>
-          <Field label="Uraian / detil pengerjaan"><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required /></Field>
+          <Field label="Uraian / detil pengerjaan"><Textarea ref={descriptionRef} rows={5} className="min-h-32 resize-y" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required /></Field>
+          <Button type="button" variant="outline" size="sm" onClick={() => {
+            const input = descriptionRef.current;
+            const start = input?.selectionStart ?? form.description.length;
+            const end = input?.selectionEnd ?? start;
+            setForm({ ...form, description: `${form.description.slice(0, start)}\n${form.description.slice(end)}` });
+            requestAnimationFrame(() => { input?.focus(); input?.setSelectionRange(start + 1, start + 1); });
+          }}><Plus />Tambah Baris</Button>
           {hasChildren(form.id) ? <p className="text-xs text-muted-foreground">Poin ini punya sub-poin; amount dihitung dari sub-poinnya.</p> : <>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Jumlah"><Input type="number" min="0" step="any" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></Field>
