@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 test("Diskon finalisasi tersimpan atomik dan terkunci untuk Internal Audit maupun Pembelian", async () => {
   const url = process.env["SUPABASE_URL"];
@@ -18,7 +18,7 @@ test("Diskon finalisasi tersimpan atomik dan terkunci untuk Internal Audit maupu
       assert.equal(created.error, null); assert.ok(created.data.user);
       userId = created.data.user.id;
       assert.equal((await admin.from("user_roles").insert({ user_id: userId, role })).error, null);
-      const client = createClient(url, pub, { auth: { persistSession: false } });
+      const client: SupabaseClient = createClient(url, pub, { auth: { persistSession: false } });
       assert.equal((await client.auth.signInWithPassword({ email, password })).error, null);
       const rab = await client.from("stock_opname_projects").insert({ project_name: "Uji diskon otomatis" }).select("id").single();
       assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
