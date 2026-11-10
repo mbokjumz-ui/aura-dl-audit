@@ -9,18 +9,24 @@ import { PdfPreview } from "@/components/PdfPreview";
 import { RabPrintAttachments } from "@/components/RabPrintAttachments";
 import { mergedRabBlob } from "@/lib/rab-attachments-client";
 import { rabScheduleSchema, workEndDate, scheduleDateLabel } from "@/lib/rab-schedule";
+import { readSuppliers, priceComparisons, pricedRabItems } from "@/lib/rab-pricing";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { rupiah, type OpnameItem } from "@/lib/stock-opname";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
-export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onClose, onFinalized }: { rabId: string; subtotal: number; initialRab: FinalizedRab & { finalization_draft?: unknown; project_name: string; division_location: string; disposition_number: string; responsible_name: string }; items: OpnameItem[]; onClose: () => void; onFinalized: () => void }) {
+export function RabFinalizationDialog({ rabId, initialRab, items, onClose, onFinalized }: { rabId: string; subtotal: number; initialRab: FinalizedRab & { finalization_draft?: unknown; project_name: string; division_location: string; disposition_number: string; responsible_name: string }; items: OpnameItem[]; onClose: () => void; onFinalized: () => void }) {
   const saved = readRabDraft(initialRab);
   const [vatIncluded, setVatIncluded] = useState(saved.vatIncluded);
   const [discountType, setDiscountType] = useState(saved.discountType);
   const [discountValue, setDiscountValue] = useState(saved.discountValue);
-  const [contractors, setContractors] = useState(saved.contractors);
+  const [selectedPriceSource, setSelectedPriceSource] = useState(saved.selectedPriceSource);
+  const comparisons = priceComparisons(items, readSuppliers(initialRab.suppliers));
+  const selection = comparisons.find(c => c.id === selectedPriceSource);
+  const subtotal = selection?.amount ?? 0;
+  const contractors = comparisons.filter(c => c.complete).map(c => ({ name: c.name, amount: String(c.amount ?? 0) }));
   const [approvers, setApprovers] = useState(saved.approvers);
   const [acknowledgers, setAcknowledgers] = useState(saved.acknowledgers);
   const [confirmed, setConfirmed] = useState(false);
@@ -35,8 +41,9 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
   const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
   const currentDraft = () => {
+    if (!selection?.complete) throw new Error("Lengkapi harga seluruh item aktif untuk sumber harga pilihan.");
     validateRabDiscount(subtotal, discountType, Number(discountValue));
-    const result = rabDraftSchema.safeParse({ discountType, discountValue, vatIncluded, contractors, approvers, acknowledgers, note, workDays, workStartDate, downPayment, responsiblePosition });
+    const result = rabDraftSchema.safeParse({ selectedPriceSource, discountType, discountValue, vatIncluded, contractors, approvers, acknowledgers, note, workDays, workStartDate, downPayment, responsiblePosition });
     if (!result.success) throw new Error("Periksa nilai penawaran, jumlah hari, tanggal, dan DP (0–100%). Isian draft boleh belum lengkap.");
     return result.data;
   };
@@ -49,7 +56,7 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
     try {
       const values = draftPreviewValues(currentDraft());
       const { createRabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
-      const pdf = createRabDispositionPdf({ ...initialRab, ...values }, items, { draft: true });
+      const pdf = createRabDispositionPdf({ ...initialRab, ...values }, pricedRabItems(items, selectedPriceSource), { draft: true });
       setPreviewUrl(URL.createObjectURL(await mergedRabBlob(rabId, pdf.output("arraybuffer"))));
     } catch (e) { toast.error(e instanceof Error ? e.message : "Pratinjau RAB gagal dibuat."); }
     finally { setPreviewing(false); }
@@ -64,18 +71,19 @@ export function RabFinalizationDialog({ rabId, subtotal, initialRab, items, onCl
     if (!disposition.success) throw new Error("Lengkapi lama pekerjaan, jabatan penanggung jawab, dan DP antara 0–100 persen.");
     if (!confirmed) throw new Error("Konfirmasi penguncian RAB terlebih dahulu.");
     const { createRabDispositionPdf } = await import("@/lib/rab-disposition-pdf");
-    await mergedRabBlob(rabId, createRabDispositionPdf({ ...initialRab, ...draftPreviewValues(currentDraft()) }, items).output("arraybuffer"));
-    const { error } = await supabase.rpc("finalize_rab_discounted_disposition", { _rab_id: rabId, _discount_type: discountType, _discount_value: Number(discountValue), _vat_included: parsed.data.vatIncluded, _contractor_quotes: parsed.data.contractors, _approvers: parsed.data.approvers, _acknowledgers: parsed.data.acknowledgers, _note: disposition.data.note, _work_days: schedule.data.workDays, _work_start_date: schedule.data.workStartDate, _down_payment_percent: disposition.data.downPaymentPercent, _responsible_position: disposition.data.responsiblePosition });
+    await mergedRabBlob(rabId, createRabDispositionPdf({ ...initialRab, ...draftPreviewValues(currentDraft()) }, pricedRabItems(items, selectedPriceSource)).output("arraybuffer"));
+    const { error } = await supabase.rpc("finalize_rab_supplier_disposition", { _rab_id: rabId, _source: selectedPriceSource, _discount_type: discountType, _discount_value: Number(discountValue), _vat_included: parsed.data.vatIncluded, _approvers: parsed.data.approvers, _acknowledgers: parsed.data.acknowledgers, _note: disposition.data.note, _work_days: schedule.data.workDays, _work_start_date: schedule.data.workStartDate, _down_payment_percent: disposition.data.downPaymentPercent, _responsible_position: disposition.data.responsiblePosition });
     if (error) throw error;
   }, onSuccess: () => { toast.success("RAB difinalisasi dan dikunci. Revisi dapat dibuka sebelum PDF ditandatangani diunggah."); onFinalized(); onClose(); }, onError: e => toast.error(e.message) });
   const signatories = (title: string, rows: typeof approvers, setRows: typeof setApprovers) => <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">{title}</legend>{rows.map((row, i) => <div key={i} className="flex items-end gap-2"><div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2"><label className="space-y-1 text-sm">Nama {i + 1}<Input required maxLength={150} value={row.name} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, name: e.target.value } : r))} /></label><label className="space-y-1 text-sm">Jabatan {i + 1}<Input required maxLength={150} value={row.position} onChange={e => setRows(rows.map((r, n) => n === i ? { ...r, position: e.target.value } : r))} /></label></div>{rows.length > 1 && <Button type="button" size="icon" variant="ghost" title={`Hapus ${title} ${i + 1}`} aria-label={`Hapus ${title} ${i + 1}`} onClick={() => setRows(rows.filter((_, n) => n !== i))}><Trash2 /></Button>}</div>)}{<Button type="button" variant="outline" size="sm" onClick={() => setRows([...rows, { name: "", position: "" }])}><Plus />Tambah {title}</Button>}</fieldset>;
   const busy = save.isPending || draftSave.isPending || previewing || attachmentsBusy;
   return <><Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Finalisasi RAB</DialogTitle><DialogDescription>Anggaran dikunci setelah finalisasi. Revisi dengan alasan hanya dapat dibuka sebelum PDF ditandatangani diunggah. Hasil Stock Opname tetap dapat diisi oleh Internal Audit.</DialogDescription></DialogHeader><form className="space-y-5" onSubmit={e => { e.preventDefault(); save.mutate(); }}><fieldset disabled={busy} className="space-y-5">
     <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => draftSave.mutate()}><Save />{draftSave.isPending ? "Menyimpan…" : "Simpan Draft Finalisasi"}</Button><Button type="button" variant="outline" onClick={preview}><Eye />{previewing ? "Membuat pratinjau…" : "Review Cetakan RAB"}</Button></div>
+    <label className="block space-y-2 text-sm font-semibold">Acuan harga RAB<Select value={selectedPriceSource} onValueChange={setSelectedPriceSource}><SelectTrigger aria-label="Acuan harga RAB"><SelectValue /></SelectTrigger><SelectContent>{comparisons.map(c => <SelectItem key={c.id} value={c.id} disabled={!c.complete}>{c.name} · {c.complete ? rupiah(c.amount ?? 0) : "Harga belum lengkap"}</SelectItem>)}</SelectContent></Select></label>
+    <dl className="space-y-2 text-sm">{comparisons.map(c => <div key={c.id} className="flex justify-between gap-3"><dt>{c.name}</dt><dd>{c.complete ? rupiah(c.amount ?? 0) : "Belum lengkap"}</dd></div>)}</dl>
     <fieldset className="space-y-3"><legend className="mb-2 text-sm font-semibold">Diskon</legend><div className="flex gap-4">{[{ value: "rupiah", label: "Rupiah (Rp)" }, { value: "percent", label: "Persen (%)" }].map(option => <label key={option.value} className="flex items-center gap-2 text-sm"><input type="radio" name="discount" checked={discountType === option.value} onChange={() => { setDiscountType(option.value === "percent" ? "percent" : "rupiah"); setDiscountValue("0"); }} />{option.label}</label>)}</div><label className="block space-y-1 text-sm">{discountType === "percent" ? "Diskon (%)" : "Diskon (Rp)"}<Input type="number" min="0" max={discountType === "percent" ? 100 : subtotal} step="0.01" value={discountValue} onChange={e => setDiscountValue(e.target.value)} /></label></fieldset>
     <fieldset className="flex flex-wrap gap-4"><legend className="mb-2 text-sm font-semibold">PPN</legend>{[{ value: false, label: "Exclude PPN" }, { value: true, label: "Include PPN 11%" }].map(option => <label key={option.label} className="flex items-center gap-2 text-sm"><input type="radio" name="ppn" checked={vatIncluded === option.value} onChange={() => setVatIncluded(option.value)} />{option.label}</label>)}</fieldset>
     <dl className="space-y-2 border-y border-border py-3 text-sm"><div className="flex justify-between gap-3"><dt>Total RAB sebelum PPN</dt><dd>{rupiah(subtotal)}</dd></div><div className="flex justify-between gap-3"><dt>Diskon{discountType === "percent" ? ` (${discountValue || 0}%)` : ""}</dt><dd>−{rupiah(totals.discount)}</dd></div><div className="flex justify-between gap-3"><dt>Total setelah diskon sebelum PPN</dt><dd>{rupiah(totals.netSubtotal)}</dd></div><div className="flex justify-between gap-3"><dt>PPN {vatIncluded ? "11%" : "(Exclude)"}</dt><dd>{rupiah(totals.ppn)}</dd></div><div className="flex justify-between gap-3 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(totals.total)}</dd></div></dl>
-    <fieldset className="space-y-3"><legend className="mb-2 font-semibold">Perbandingan penawaran sebelum PPN</legend>{contractors.map((row, i) => <div key={i} className="flex items-end gap-2"><div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2"><label className="space-y-1 text-sm">Nama kontraktor {i + 1}<Input required maxLength={150} value={row.name} onChange={e => setContractors(contractors.map((r, n) => n === i ? { ...r, name: e.target.value } : r))} /></label><label className="space-y-1 text-sm">Penawaran {i + 1} sebelum PPN (Rp)<Input required type="number" min="0" max="100000000000000" step="0.01" value={row.amount} onChange={e => setContractors(contractors.map((r, n) => n === i ? { ...r, amount: e.target.value } : r))} /></label></div>{contractors.length > 1 && <Button type="button" size="icon" variant="ghost" title={`Hapus kontraktor ${i + 1}`} aria-label={`Hapus kontraktor ${i + 1}`} onClick={() => setContractors(contractors.filter((_, n) => n !== i))}><Trash2 /></Button>}</div>)}{<Button type="button" variant="outline" size="sm" onClick={() => setContractors([...contractors, { name: "", amount: "" }])}><Plus />Tambah Kontraktor</Button>}</fieldset>
     <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">Disposisi dan pembayaran</legend>
       <label className="block space-y-1 text-sm">Note / catatan<Textarea maxLength={5000} value={note} onChange={e => setNote(e.target.value)} /></label>
       <div className="grid gap-3 sm:grid-cols-2">
