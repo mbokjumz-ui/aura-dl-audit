@@ -48,3 +48,5 @@
 - [x] Tambahkan dashboard Stock Opname untuk Internal Audit dan Pembelian, serta uji perhitungan dan tampilan.
 - [x] Izinkan uraian/detail beberapa baris per poin dan sub-poin RAB dengan tambah baris manual; verifikasi penyimpanan, tabel, dan cetakan.
 - [x] Tambahkan diskon rupiah/persen sebelum PPN pada finalisasi, draft, rincian dan cetakan; uji perhitungan, penyimpanan dan kunci final.
+- [ ] Input supplier di awal dan harga perkiraan/pembanding per item; cetak perbandingan harga.
+- [ ] Tandai item batal tanpa menghapus, pilih sumber harga final, dan sinkronkan RAB/opname/cetakan; uji kedua peran.

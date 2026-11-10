@@ -5,6 +5,9 @@ export type OpnameItem = {
   quantity: number;
   unit: string;
   unit_price: number;
+  estimated_unit_price?: number | null;
+  supplier_prices?: unknown;
+  is_cancelled?: boolean;
   actual_quantity: number | null;
   sort_order: number;
 };
@@ -18,7 +21,13 @@ export function rabTree(items: OpnameItem[]) {
 }
 
 export function leaves(items: OpnameItem[]) {
-  return items.filter(i => !items.some(c => c.parent_id === i.id));
+  return items.filter(i => !i.is_cancelled && !items.some(p => p.id === i.parent_id && p.is_cancelled) && !items.some(c => c.parent_id === i.id));
+}
+
+/** Preserve cancelled records, but never promote an empty group into a priced leaf. */
+export function activeRabItems(items: OpnameItem[]) {
+  return items.filter(i => !i.is_cancelled && !items.some(p => p.id === i.parent_id && p.is_cancelled)
+    && (!items.some(c => c.parent_id === i.id) || items.some(c => c.parent_id === i.id && !c.is_cancelled)));
 }
 
 export function rabTotals(items: OpnameItem[]) {
@@ -40,7 +49,7 @@ export function opnameProgress(items: OpnameItem[]) {
 }
 
 export function groupAmount(children: OpnameItem[], field: "quantity" | "actual_quantity") {
-  return children.reduce((s, c) => s + lineAmount(c[field] ?? 0, c.unit_price), 0);
+  return children.filter(c => !c.is_cancelled).reduce((s, c) => s + lineAmount(c[field] ?? 0, c.unit_price), 0);
 }
 
 export function numberedRabRows(items: OpnameItem[]) {

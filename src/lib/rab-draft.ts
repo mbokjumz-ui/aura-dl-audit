@@ -5,6 +5,7 @@ import { workEndDate } from "./rab-schedule";
 const text = z.string().max(150);
 const party = z.object({ name: text, position: text });
 export const rabDraftSchema = z.object({
+  selectedPriceSource: z.string().default("estimate"),
   discountType: z.enum(["rupiah", "percent"]).default("rupiah"),
   discountValue: z.string().refine(v => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 100000000000000)).default("0"),
   vatIncluded: z.boolean(),
@@ -22,6 +23,7 @@ export function readRabDraft(rab: FinalizedRab & { finalization_draft?: unknown 
   if (!rab.finalized_at && draft.success) return draft.data;
   const saved = readRabFinalization(rab);
   return {
+    selectedPriceSource: rab.selected_price_source ?? "estimate",
     discountType: rab.discount_type === "percent" ? "percent" : "rupiah", discountValue: String(rab.discount_value ?? 0),
     vatIncluded: rab.vat_included,
     contractors: saved?.contractors.map(c => ({ name: c.name, amount: String(c.amount) })) ?? [{ name: "", amount: "" }],
@@ -34,6 +36,7 @@ export function readRabDraft(rab: FinalizedRab & { finalization_draft?: unknown 
 export function draftPreviewValues(draft: RabDraft): FinalizedRab {
   const party = (p: RabDraft["approvers"][number]) => ({ name: p.name.trim() || "—", position: p.position.trim() || "—" });
   return {
+    selected_price_source: draft.selectedPriceSource,
     discount_type: draft.discountType, discount_value: Number(draft.discountValue) || 0,
     finalized_at: null, vat_included: draft.vatIncluded,
     contractor_quotes: draft.contractors.map(c => ({ name: c.name.trim() || "—", amount: Number(c.amount) || 0 })),
