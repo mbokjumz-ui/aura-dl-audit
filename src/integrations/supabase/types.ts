@@ -767,11 +767,14 @@ export type Database = {
           actual_quantity: number | null
           created_at: string
           description: string
+          estimated_unit_price: number | null
           id: string
+          is_cancelled: boolean
           parent_id: string | null
           quantity: number
           rab_id: string
           sort_order: number
+          supplier_prices: Json
           unit: string
           unit_price: number
         }
@@ -779,11 +782,14 @@ export type Database = {
           actual_quantity?: number | null
           created_at?: string
           description: string
+          estimated_unit_price?: number | null
           id?: string
+          is_cancelled?: boolean
           parent_id?: string | null
           quantity?: number
           rab_id: string
           sort_order?: number
+          supplier_prices?: Json
           unit?: string
           unit_price?: number
         }
@@ -791,11 +797,14 @@ export type Database = {
           actual_quantity?: number | null
           created_at?: string
           description?: string
+          estimated_unit_price?: number | null
           id?: string
+          is_cancelled?: boolean
           parent_id?: string | null
           quantity?: number
           rab_id?: string
           sort_order?: number
+          supplier_prices?: Json
           unit?: string
           unit_price?: number
         }
@@ -837,8 +846,10 @@ export type Database = {
           responsible_name: string
           responsible_position: string
           revision_number: number
+          selected_price_source: string
           signed_locked_at: string | null
           status: string
+          suppliers: Json
           vat_included: boolean
           work_duration: string
           work_duration_days: number | null
@@ -865,8 +876,10 @@ export type Database = {
           responsible_name?: string
           responsible_position?: string
           revision_number?: number
+          selected_price_source?: string
           signed_locked_at?: string | null
           status?: string
+          suppliers?: Json
           vat_included?: boolean
           work_duration?: string
           work_duration_days?: number | null
@@ -893,8 +906,10 @@ export type Database = {
           responsible_name?: string
           responsible_position?: string
           revision_number?: number
+          selected_price_source?: string
           signed_locked_at?: string | null
           status?: string
+          suppliers?: Json
           vat_included?: boolean
           work_duration?: string
           work_duration_days?: number | null
@@ -966,6 +981,23 @@ export type Database = {
           _note: string
           _rab_id: string
           _responsible_position: string
+          _vat_included: boolean
+          _work_days: number
+          _work_start_date: string
+        }
+        Returns: undefined
+      }
+      finalize_rab_supplier_disposition: {
+        Args: {
+          _acknowledgers: Json
+          _approvers: Json
+          _discount_type: string
+          _discount_value: number
+          _down_payment_percent: number
+          _note: string
+          _rab_id: string
+          _responsible_position: string
+          _source: string
           _vat_included: boolean
           _work_days: number
           _work_start_date: string

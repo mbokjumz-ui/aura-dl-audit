@@ -183,6 +183,13 @@
       "when": 1794187636833,
       "tag": "0025_rab_discount_before_vat",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794272228352,
+      "tag": "0026_rab_supplier_item_pricing",
+      "breakpoints": true
     }
   ]
 }
