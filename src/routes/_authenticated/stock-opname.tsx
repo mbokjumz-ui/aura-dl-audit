@@ -52,7 +52,10 @@ function StockOpnamePage() {
   const list = useSuspenseQuery(stockOpnameProjectsQuery);
   const saveHeader = useMutation({ mutationFn: async (f: Header & { id?: string }) => {
     if (!f.project_name.trim()) throw new Error("Nama proyek wajib diisi.");
-    const values = { project_name: f.project_name.trim(), division_location: f.division_location.trim(), disposition_number: f.disposition_number.trim(), responsible_name: f.responsible_name.trim(), auditor_name: f.auditor_name.trim(), suppliers: supplierSchema.parse(f.suppliers) };
+    const suppliers = supplierSchema.parse(f.suppliers);
+    const previous = list.data.find(p => p.id === f.id);
+    const source = previous?.selected_price_source ?? "estimate";
+    const values = { project_name: f.project_name.trim(), division_location: f.division_location.trim(), disposition_number: f.disposition_number.trim(), responsible_name: f.responsible_name.trim(), auditor_name: f.auditor_name.trim(), suppliers, selected_price_source: source === "estimate" || suppliers.some(s => s.id === source) ? source : "estimate" };
     const r = f.id ? await supabase.from("stock_opname_projects").update(values).eq("id", f.id).select().single()
       : await supabase.from("stock_opname_projects").insert(values).select().single();
     if (r.error) throw r.error;

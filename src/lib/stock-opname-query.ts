@@ -6,6 +6,6 @@ export const stockOpnameProjectsQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase.from("stock_opname_projects").select("*, stock_opname_items(*)").order("created_at", { ascending: false });
     if (error) throw error;
-    return data;
+    return data.map(project => project.finalized_at ? project : { ...project, stock_opname_items: project.stock_opname_items.map(item => ({ ...item, unit_price: item.estimated_unit_price ?? item.unit_price })) });
   },
 });
