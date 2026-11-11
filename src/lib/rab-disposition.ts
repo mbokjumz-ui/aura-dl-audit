@@ -1,4 +1,4 @@
-import { numberedRabRows, groupAmount, lineAmount, rabTotals, type OpnameItem } from "./stock-opname";
+import { activeRabItems, numberedRabRows, groupAmount, lineAmount, rabTotals, type OpnameItem } from "./stock-opname";
 import { rabDiscountTotals, type FinalizedRab } from "./rab-finalization";
 
 const digits = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
@@ -23,7 +23,7 @@ export function rupiahWords(value: number) {
 }
 export function dispositionAmounts(items: OpnameItem[], vatIncluded: boolean, discount: Pick<FinalizedRab, "discount_type" | "discount_value"> = {}) {
   return {
-    rows: numberedRabRows(items).map(row => ({ ...row, amount: row.children.length ? groupAmount(row.children, "quantity") : lineAmount(row.item.quantity, row.item.unit_price) })),
+    rows: numberedRabRows(activeRabItems(items)).map(row => ({ ...row, amount: row.children.length ? groupAmount(row.children, "quantity") : lineAmount(row.item.quantity, row.item.unit_price) })),
     totals: rabDiscountTotals(rabTotals(items).rab, vatIncluded, discount),
   };
 }

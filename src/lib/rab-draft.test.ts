@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import { rabDraftSchema, readRabDraft, draftPreviewValues } from "./rab-draft";
 
 const initial = { finalized_at: null, vat_included: false, contractor_quotes: [], approvers: [], acknowledgers: [] };
+test("supplier selection persists in draft and preview", () => {
+  const draft = { ...readRabDraft(initial), selectedPriceSource: "00000000-0000-4000-8000-000000000001" };
+  assert.equal(readRabDraft({ ...initial, finalization_draft: draft }).selectedPriceSource, draft.selectedPriceSource);
+  assert.equal(draftPreviewValues(draft).selected_price_source, draft.selectedPriceSource);
+});
 test("draft permits incomplete finalization and restores all entered inputs", () => {
   const draft = { ...readRabDraft(initial), note: "Catatan sementara", contractors: [{ name: "Kontraktor", amount: "" }], downPayment: "30" };
   assert.equal(rabDraftSchema.safeParse(draft).success, true);

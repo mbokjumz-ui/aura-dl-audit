@@ -6,6 +6,7 @@ import { rupiah, type OpnameItem } from "./stock-opname";
 import reportStyles from "../styles.css?raw";
 import { workScheduleLabel } from "./rab-schedule";
 import { mergedRabBlob } from "./rab-attachments-client";
+import { readSuppliers } from "./rab-pricing";
 
 function reportColor(token: string) {
   const color = reportStyles.match(new RegExp(`--report-table-${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
@@ -50,6 +51,7 @@ export function createRabDispositionPdf(header: DispositionHeader, items: Opname
   text(`Mohon disposisi biaya ${header.project_name} di ${header.division_location || "-"}`);
   text(rupiah(totals.total), true);
   text(`(${rupiahWords(totals.total)})`);
+  if (header.selected_price_source) text(`Acuan harga: ${readSuppliers(header.suppliers).find(s => s.id === header.selected_price_source)?.name ?? "Perkiraan Pembelian"}`);
   text("Dengan rincian sebagai berikut:");
   table({
     head: [["No.", "Uraian pengerjaan", "Jumlah", "Satuan", "Nilai (Rp)", "Amount (Rp)"]],
