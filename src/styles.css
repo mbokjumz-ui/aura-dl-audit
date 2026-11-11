@@ -51,6 +51,7 @@
 
 :root {
   --report-table-header: #35465b;
+  --report-table-estimate-header: #f4cf58;
   --report-table-header-text: #ffffff;
   --report-table-border: #8b96a3;
   --report-table-total: #e9edf2;
