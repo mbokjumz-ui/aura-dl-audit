@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { numberedRabRows, groupAmount, lineAmount, rabTotals, rupiah, type OpnameItem } from "./stock-opname";
+import { activeRabItems, numberedRabRows, groupAmount, lineAmount, rabTotals, rupiah, type OpnameItem } from "./stock-opname";
 import { rabDiscountTotals, readRabFinalization, type FinalizedRab } from "./rab-finalization";
 
 type ReportHeader = {
@@ -8,6 +8,7 @@ type ReportHeader = {
   responsible_name: string; auditor_name: string; status: string; completed_at: string | null;
 } & FinalizedRab;
 export function stockOpnamePdf(header: ReportHeader, items: OpnameItem[], documents: { item_id: string; file_name: string }[]) {
+  items = activeRabItems(items);
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   pdf.setFontSize(18);
   pdf.text("AURA - Laporan Hasil Stock Opname", 14, 16);

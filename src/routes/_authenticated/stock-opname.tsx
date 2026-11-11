@@ -272,8 +272,8 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         </tbody>
         <tfoot className="border-t-2 border-border font-semibold"><tr>
           <td className="p-2" colSpan={5}>Total</td><td className="p-2 text-right">{rupiah(totals.rab)}</td>
-          {tab === "rab" && !locked && suppliers.map(s => <td key={s.id} className="p-2 text-right">{group ? "" : sourcePrice(i, s.id) === null ? "—" : rupiah(sourcePrice(i,s.id) ?? 0)}</td>)}
-      {tab === "rab" ? <td /> : <><td /><td className="p-2 text-right">{rupiah(totals.actual)}</td><td className={`p-2 text-right ${diffClass(totals.difference)}`}>{rupiah(totals.difference)}</td><td /></>}
+          {tab === "rab" && !locked && suppliers.map(s => <td key={s.id} />)}
+          {tab === "rab" ? <td /> : <><td /><td className="p-2 text-right">{rupiah(totals.actual)}</td><td className={`p-2 text-right ${diffClass(totals.difference)}`}>{rupiah(totals.difference)}</td><td /></>}
         </tr></tfoot>
       </table>
     </div>

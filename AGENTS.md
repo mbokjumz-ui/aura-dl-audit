@@ -36,3 +36,4 @@
 - Create and delete purchasing accounts only through internal-audit-authorized server functions; verify the deletion target has only purchasing access and is not the caller before deleting the auth user; admin-created purchasing accounts are confirmed immediately; keep profile names separate from roles.
 
 - Persist RAB discount mode/value with atomic scheduled finalization and validate it on direct writes; compute discount before VAT in shared summaries/PDFs while keeping raw leaf amounts and opname progress unchanged.
+- Keep estimate prices and supplier-ID-keyed item quotes separate from effective unit prices; atomically select prices at finalization and filter cancelled branches through shared helpers so retained comparisons never inflate budgets or opname progress.
