@@ -13,8 +13,20 @@ export function createRabComparisonPdf(header: { project_name: string; division_
   const comparisons = priceComparisons(items, readSuppliers(header.suppliers));
   // One estimate/supplier pair per table keeps an unlimited supplier list legible.
   for (const source of comparisons) {
-    autoTable(pdf, { theme: "grid", styles: { fontSize: 9, cellPadding: 2, textColor: reportColor("text"), lineColor: reportColor("border") }, headStyles: { fillColor: reportColor("header"), textColor: reportColor("header-text") }, footStyles: { fillColor: reportColor("total"), textColor: reportColor("text") },
-      head: [["No.", "Uraian pengerjaan", "Status", "Jumlah", "Satuan", `${source.name} / unit (Rp)`, "Amount (Rp)"]],
+    const previousEnd = (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 35;
+    let startY = previousEnd + 15;
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
+    const titleLines = pdf.splitTextToSize(source.name, 269) as string[];
+    const titleHeight = titleLines.length * 5;
+    if (startY + titleHeight + 30 > pdf.internal.pageSize.getHeight() - 14) {
+      pdf.addPage(); startY = 20 + titleHeight;
+    } else startY += titleHeight - 5;
+    autoTable(pdf, { startY, margin: { top: 20 + titleHeight, bottom: 14, left: 14, right: 14 }, theme: "grid", styles: { fontSize: 9, cellPadding: 2, textColor: reportColor("text"), lineColor: reportColor("border") }, headStyles: { fillColor: reportColor(source.id === "estimate" ? "estimate-header" : "header"), textColor: reportColor(source.id === "estimate" ? "text" : "header-text") }, footStyles: { fillColor: reportColor("total"), textColor: reportColor("text") },
+      willDrawPage: data => {
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(reportColor("text"));
+        pdf.text(titleLines, 14, (data.cursor?.y ?? startY) - titleHeight);
+      },
+      head: [["No.", "Uraian pengerjaan", "Status", "Jumlah", "Satuan", "Nilai / unit (Rp)", "Amount (Rp)"]],
       body: numberedRabRows(items).map(({ item, number, children }) => {
         const cancelled = item.is_cancelled || items.some(p => p.id === item.parent_id && p.is_cancelled);
         const price = sourcePrice(item, source.id), amount = comparisonAmount(item, source.id);
