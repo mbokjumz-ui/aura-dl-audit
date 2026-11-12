@@ -65,7 +65,7 @@ export function createStockOpnamePdf(header: ReportHeader, items: OpnameItem[], 
       }
     },
   });
-  autoTable(pdf, { startY: lastY() + 5, theme: "grid", styles: { fontSize: 9, textColor: reportColor("text"), lineColor: reportColor("border") },
+  autoTable(pdf, { startY: lastY() + 5, pageBreak: "avoid", theme: "grid", styles: { fontSize: 9, textColor: reportColor("text"), lineColor: reportColor("border") },
     body: [["Persentase Diskon", percent(discountPercent)], ["Prestasi Kerja", percent(workPercent)]], columnStyles: { 0: { cellWidth: 65 } } });
   const supplierName = readSuppliers(header.suppliers).find(s => s.id === header.selected_price_source)?.name ?? "Perkiraan Pembelian";
   let y = lastY() + 9;
@@ -81,7 +81,7 @@ export function createStockOpnamePdf(header: ReportHeader, items: OpnameItem[], 
   const closing = pdf.splitTextToSize(`Nama Pemborong / Supplier: ${supplierName}`, width) as string[];
   const roleHeight = Math.max(...roles.map(r => r.length)) * 4;
   const nameHeight = Math.max(...names.map(r => r.length)) * 4;
-  const blockHeight = closing.length * 4 + 12 + roleHeight + 24 + nameHeight;
+  const blockHeight = closing.length * 4 + 12 + roleHeight + 27 + nameHeight;
   if (y + blockHeight > pdf.internal.pageSize.getHeight() - 16) { pdf.addPage(); y = 20; }
   pdf.setFont("helvetica", "bold");
   pdf.text(closing, margin, y);

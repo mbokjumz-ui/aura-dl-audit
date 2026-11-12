@@ -50,4 +50,4 @@
 - [x] Tambahkan diskon rupiah/persen sebelum PPN pada finalisasi, draft, rincian dan cetakan; uji perhitungan, penyimpanan dan kunci final.
 - [x] Input supplier di awal dan harga perkiraan/pembanding per item; cetak perbandingan harga.
 - [x] Tandai item batal tanpa menghapus, pilih sumber harga final, dan sinkronkan RAB/opname/cetakan; uji kedua peran.
-- [ ] Ubah Cetak SO menjadi berita acara dengan volume, nilai pilihan, diskon proporsional, prestasi kerja, supplier, dan tanda tangan; uji cetakan.
+- [x] Ubah Cetak SO menjadi berita acara dengan volume, nilai pilihan, diskon proporsional, prestasi kerja, supplier, dan tanda tangan; uji cetakan.
