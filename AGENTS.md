@@ -26,7 +26,7 @@
 - Use the shared RAB finalization permission for Internal Audit and Purchasing controls; finalization never grants actual-quantity or opname-completion access.
 - Delete whole finalized RABs through an Internal-Audit-authorized server function using privileged deletion and private file cleanup; retain database locks on budget edits and individual final items.
 - Store stock opname attachments in private stock-opname-documents storage with cascade-linked item metadata; reuse ArchiveDocuments via typed owner props so private file behavior remains consistent.
-- Generate stock opname PDFs client-side from the same numbered rows and totals used on screen, including header snapshots, completion status, and attachment filenames; reports must not expose private storage URLs.
+- Generate stock opname PDFs client-side through the tested stock-opname-report summary using effective RAB prices and proportional discounts for actual totals; preserve numbered active rows, header snapshots, completion status, and attachment filenames without exposing private storage URLs.
 - Finalize disposition atomically; append private rab_print_documents PDF/image pages client-side via pdf-lib for preview/print, lock attachments with RAB, and clean them on deletion; keep Stock Opname reports separate.
 - Finalize structured calendar-day schedules atomically with disposition metadata; derive the end date in the database and use inclusive start-day arithmetic in UI/PDF to keep dates consistent.
 - Link signed RAB PDFs to projects via rab_approval_documents in private stock-opname storage; reuse ArchiveDocuments and clean files on project deletion independently of budget locking.

@@ -237,7 +237,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
       <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>{canFinalize && <Button variant="outline" disabled={!items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button>}</>}
         <RabRevisionControls key={rab.id} rabId={rab.id} finalized={locked} signedLocked={!!rab.signed_locked_at} canRevise={canFinalize} />
-        <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak PDF"}</Button>
+        <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak SO"}</Button>
         <Button variant="outline" disabled={exporting} onClick={exportComparison}><FileDown />Cetak Perbandingan Harga</Button>
         <Button variant="outline" disabled={!locked || exporting || removeRab.isPending} onClick={exportRab}><FileDown />Cetak RAB</Button>
         {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
