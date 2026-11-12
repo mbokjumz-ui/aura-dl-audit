@@ -51,3 +51,4 @@
 - [x] Input supplier di awal dan harga perkiraan/pembanding per item; cetak perbandingan harga.
 - [x] Tandai item batal tanpa menghapus, pilih sumber harga final, dan sinkronkan RAB/opname/cetakan; uji kedua peran.
 - [x] Ubah Cetak SO menjadi berita acara dengan volume, nilai pilihan, diskon proporsional, prestasi kerja, supplier, dan tanda tangan; uji cetakan.
+- [ ] Satukan cetak perbandingan harga menjadi tabel RAB/supplier dengan margin kecil, volume/satuan, jumlah, diskon dan grand total; uji cetakan.

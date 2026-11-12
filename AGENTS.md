@@ -37,3 +37,4 @@
 
 - Persist RAB discount mode/value with atomic scheduled finalization and validate it on direct writes; compute discount before VAT in shared summaries/PDFs while keeping raw leaf amounts and opname progress unchanged.
 - Keep estimate prices and supplier-ID-keyed item quotes separate from effective unit prices; atomically select prices at finalization and filter cancelled branches through shared helpers so retained comparisons never inflate budgets or opname progress.
+- Generate the comparison PDF as a shared matrix with per-source totals from rab-comparison-report; repeat identity/estimate columns on overflow pages to keep unlimited supplier comparisons readable.
