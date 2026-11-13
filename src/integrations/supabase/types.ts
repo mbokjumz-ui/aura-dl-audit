@@ -848,6 +848,7 @@ export type Database = {
           revision_number: number
           selected_price_source: string
           signed_locked_at: string | null
+          source_discounts: Json | null
           status: string
           suppliers: Json
           vat_included: boolean
@@ -878,6 +879,7 @@ export type Database = {
           revision_number?: number
           selected_price_source?: string
           signed_locked_at?: string | null
+          source_discounts?: Json | null
           status?: string
           suppliers?: Json
           vat_included?: boolean
@@ -908,6 +910,7 @@ export type Database = {
           revision_number?: number
           selected_price_source?: string
           signed_locked_at?: string | null
+          source_discounts?: Json | null
           status?: string
           suppliers?: Json
           vat_included?: boolean
@@ -1025,12 +1028,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      rab_source_discount: {
+        Args: {
+          _discounts: Json
+          _draft: Json
+          _selected: string
+          _source: string
+          _type: string
+          _value: number
+        }
+        Returns: Json
+      }
       reopen_rab_revision: {
         Args: { _rab_id: string; _reason: string }
         Returns: number
       }
       save_rab_finalization_draft: {
         Args: { _draft: Json; _rab_id: string }
+        Returns: undefined
+      }
+      save_rab_source_discount: {
+        Args: {
+          _discount_type: string
+          _discount_value: number
+          _rab_id: string
+          _source: string
+        }
         Returns: undefined
       }
       submit_follow_up: {
