@@ -10,6 +10,7 @@ export const rabFinalizationSchema = z.object({
 });
 export type RabFinalization = z.infer<typeof rabFinalizationSchema>;
 export type FinalizedRab = {
+  source_discounts?: unknown;
   suppliers?: unknown;
   selected_price_source?: string;
   discount_type?: string;
