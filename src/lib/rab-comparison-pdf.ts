@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { numberedRabRows, rupiah, type OpnameItem } from "./stock-opname";
-import { comparisonAmount, priceComparisons, readSuppliers, sourcePrice } from "./rab-pricing";
+import { comparisonAmount, sourcePrice } from "./rab-pricing";
 import { rabComparisonReport } from "./rab-comparison-report";
 import type { FinalizedRab } from "./rab-finalization";
 import reportStyles from "../styles.css?raw";
@@ -16,7 +16,7 @@ export function createRabComparisonPdf(header: { project_name: string; division_
   autoTable(pdf, { startY: 13, margin: { left: margin, right: margin }, theme: "plain", styles: { fontSize: 8, cellPadding: 1, textColor: reportColor("text") }, body: [["Proyek", header.project_name], ["Divisi / lokasi", header.division_location], ["No. disposisi", header.disposition_number]] });
   const comparisons = rabComparisonReport(items, header);
   const rows = numberedRabRows(items);
-  const priceWidth = Math.max(25, (width - 36) / (comparisons.length * 2));
+  const priceWidth = Math.max(25, (width - 36 - 0.1) / (comparisons.length * 2));
   const columnStyles: Record<number, { cellWidth: number; halign?: "right" }> = { 0: { cellWidth: 12 }, 1: { cellWidth: 12, halign: "right" }, 2: { cellWidth: 12 } };
   comparisons.forEach((_, index) => {
     columnStyles[3 + index * 2] = { cellWidth: priceWidth, halign: "right" };
@@ -44,7 +44,7 @@ export function createRabComparisonPdf(header: { project_name: string; division_
     }),
     foot: [summaryRow("Jumlah", "subtotal"), summaryRow("Diskon", "discount"), summaryRow("Grand Total", "total")],
     showFoot: "lastPage", columnStyles,
-    horizontalPageBreak: true, horizontalPageBreakRepeat: [0, 1, 2, 3, 4], horizontalPageBreakBehaviour: "afterAllRows",
+    horizontalPageBreak: 36 + priceWidth * comparisons.length * 2 > width, horizontalPageBreakRepeat: [0, 1, 2, 3, 4], horizontalPageBreakBehaviour: "afterAllRows",
     didParseCell: data => {
       if (data.section === "head" && (data.column.index === 3 || data.column.index === 4)) {
         data.cell.styles.fillColor = reportColor("estimate-header");
