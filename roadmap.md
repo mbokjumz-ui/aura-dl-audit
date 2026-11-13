@@ -52,3 +52,4 @@
 - [x] Tandai item batal tanpa menghapus, pilih sumber harga final, dan sinkronkan RAB/opname/cetakan; uji kedua peran.
 - [x] Ubah Cetak SO menjadi berita acara dengan volume, nilai pilihan, diskon proporsional, prestasi kerja, supplier, dan tanda tangan; uji cetakan.
 - [x] Satukan cetak perbandingan harga menjadi tabel RAB/supplier dengan margin kecil, volume/satuan, jumlah, diskon dan grand total; uji cetakan.
+- [ ] Pindahkan diskon ke rincian proyek per sumber harga; tarik otomatis ke finalisasi dan cetak perbandingan, serta uji penyimpanan dan kunci.

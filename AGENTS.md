@@ -35,6 +35,6 @@
 - Guard audit pages by role beneath the managed authentication gate, enforce the same boundary with restrictive RLS on audit data/files, and protect actual opname values and completion through database triggers to prevent bypass via direct requests or cascades.
 - Create and delete purchasing accounts only through internal-audit-authorized server functions; verify the deletion target has only purchasing access and is not the caller before deleting the auth user; admin-created purchasing accounts are confirmed immediately; keep profile names separate from roles.
 
-- Persist RAB discount mode/value with atomic scheduled finalization and validate it on direct writes; compute discount before VAT in shared summaries/PDFs while keeping raw leaf amounts and opname progress unchanged.
+- Store per-source RAB discounts separately from the finalized discount snapshot; resolve the selected source atomically at finalization and in comparison summaries, preserving legacy selected-source discounts and raw opname progress.
 - Keep estimate prices and supplier-ID-keyed item quotes separate from effective unit prices; atomically select prices at finalization and filter cancelled branches through shared helpers so retained comparisons never inflate budgets or opname progress.
 - Generate the comparison PDF as a shared matrix with per-source totals from rab-comparison-report; repeat identity/estimate columns on overflow pages to keep unlimited supplier comparisons readable.
