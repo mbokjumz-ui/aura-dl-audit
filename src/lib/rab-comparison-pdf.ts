@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { numberedRabRows, rupiah, type OpnameItem } from "./stock-opname";
-import { comparisonAmount, priceComparisons, readSuppliers, sourcePrice } from "./rab-pricing";
+import { comparisonAmount, sourcePrice } from "./rab-pricing";
 import { rabComparisonReport } from "./rab-comparison-report";
 import type { FinalizedRab } from "./rab-finalization";
 import reportStyles from "../styles.css?raw";
