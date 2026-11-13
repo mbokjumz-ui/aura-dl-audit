@@ -7,7 +7,7 @@ import type { FinalizedRab } from "./rab-finalization";
 import reportStyles from "../styles.css?raw";
 
 const reportColor = (token: string) => reportStyles.match(new RegExp(`--report-table-${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1] ?? "";
-export function createRabComparisonPdf(header: { project_name: string; division_location: string; disposition_number: string } & Pick<FinalizedRab, "suppliers" | "discount_type" | "discount_value">, items: OpnameItem[]) {
+export function createRabComparisonPdf(header: { project_name: string; division_location: string; disposition_number: string } & Pick<FinalizedRab, "suppliers" | "source_discounts" | "selected_price_source" | "discount_type" | "discount_value">, items: OpnameItem[]) {
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const margin = 5;
   const width = pdf.internal.pageSize.getWidth() - margin * 2;

@@ -12,6 +12,7 @@ import { rabScheduleSchema, workEndDate, scheduleDateLabel } from "@/lib/rab-sch
 import { readSuppliers, priceComparisons, pricedRabItems } from "@/lib/rab-pricing";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { rupiah, type OpnameItem } from "@/lib/stock-opname";
+import { sourceDiscount } from "@/lib/rab-source-discounts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,9 +21,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 export function RabFinalizationDialog({ rabId, initialRab, items, onClose, onFinalized }: { rabId: string; subtotal: number; initialRab: FinalizedRab & { finalization_draft?: unknown; project_name: string; division_location: string; disposition_number: string; responsible_name: string }; items: OpnameItem[]; onClose: () => void; onFinalized: () => void }) {
   const saved = readRabDraft(initialRab);
   const [vatIncluded, setVatIncluded] = useState(saved.vatIncluded);
-  const [discountType, setDiscountType] = useState(saved.discountType);
-  const [discountValue, setDiscountValue] = useState(saved.discountValue);
   const [selectedPriceSource, setSelectedPriceSource] = useState(saved.selectedPriceSource);
+  const selectedDiscount = sourceDiscount(initialRab, selectedPriceSource);
+  const discountType = selectedDiscount.discount_type;
+  const discountValue = String(selectedDiscount.discount_value);
   const comparisons = priceComparisons(items, readSuppliers(initialRab.suppliers));
   const selection = comparisons.find(c => c.id === selectedPriceSource);
   const subtotal = selection?.amount ?? 0;
@@ -81,7 +83,7 @@ export function RabFinalizationDialog({ rabId, initialRab, items, onClose, onFin
     <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={() => draftSave.mutate()}><Save />{draftSave.isPending ? "Menyimpan…" : "Simpan Draft Finalisasi"}</Button><Button type="button" variant="outline" onClick={preview}><Eye />{previewing ? "Membuat pratinjau…" : "Review Cetakan RAB"}</Button></div>
     <label className="block space-y-2 text-sm font-semibold">Acuan harga RAB<Select value={selectedPriceSource} onValueChange={setSelectedPriceSource}><SelectTrigger aria-label="Acuan harga RAB"><SelectValue /></SelectTrigger><SelectContent>{comparisons.map(c => <SelectItem key={c.id} value={c.id} disabled={!c.complete}>{c.name} · {c.complete ? rupiah(c.amount ?? 0) : "Harga belum lengkap"}</SelectItem>)}</SelectContent></Select></label>
     <dl className="space-y-2 text-sm">{comparisons.map(c => <div key={c.id} className="flex justify-between gap-3"><dt>{c.name}</dt><dd>{c.complete ? rupiah(c.amount ?? 0) : "Belum lengkap"}</dd></div>)}</dl>
-    <fieldset className="space-y-3"><legend className="mb-2 text-sm font-semibold">Diskon</legend><div className="flex gap-4">{[{ value: "rupiah", label: "Rupiah (Rp)" }, { value: "percent", label: "Persen (%)" }].map(option => <label key={option.value} className="flex items-center gap-2 text-sm"><input type="radio" name="discount" checked={discountType === option.value} onChange={() => { setDiscountType(option.value === "percent" ? "percent" : "rupiah"); setDiscountValue("0"); }} />{option.label}</label>)}</div><label className="block space-y-1 text-sm">{discountType === "percent" ? "Diskon (%)" : "Diskon (Rp)"}<Input type="number" min="0" max={discountType === "percent" ? 100 : subtotal} step="0.01" value={discountValue} onChange={e => setDiscountValue(e.target.value)} /></label></fieldset>
+    <div className="flex justify-between gap-3 text-sm"><span className="font-semibold">Diskon {selection?.name}</span><span>{discountType === "percent" ? `${discountValue}%` : rupiah(Number(discountValue))}</span></div>
     <fieldset className="flex flex-wrap gap-4"><legend className="mb-2 text-sm font-semibold">PPN</legend>{[{ value: false, label: "Exclude PPN" }, { value: true, label: "Include PPN 11%" }].map(option => <label key={option.label} className="flex items-center gap-2 text-sm"><input type="radio" name="ppn" checked={vatIncluded === option.value} onChange={() => setVatIncluded(option.value)} />{option.label}</label>)}</fieldset>
     <dl className="space-y-2 border-y border-border py-3 text-sm"><div className="flex justify-between gap-3"><dt>Total RAB sebelum PPN</dt><dd>{rupiah(subtotal)}</dd></div><div className="flex justify-between gap-3"><dt>Diskon{discountType === "percent" ? ` (${discountValue || 0}%)` : ""}</dt><dd>−{rupiah(totals.discount)}</dd></div><div className="flex justify-between gap-3"><dt>Total setelah diskon sebelum PPN</dt><dd>{rupiah(totals.netSubtotal)}</dd></div><div className="flex justify-between gap-3"><dt>PPN {vatIncluded ? "11%" : "(Exclude)"}</dt><dd>{rupiah(totals.ppn)}</dd></div><div className="flex justify-between gap-3 font-semibold"><dt>Total akhir RAB</dt><dd>{rupiah(totals.total)}</dd></div></dl>
     <fieldset className="space-y-3 border-t border-border pt-4"><legend className="font-semibold">Disposisi dan pembayaran</legend>

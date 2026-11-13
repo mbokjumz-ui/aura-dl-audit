@@ -11,13 +11,18 @@ const item: OpnameItem = { id: "item", parent_id: null, description: "Pekerjaan"
 test("each comparison multiplies its own price by volume and totals independently", () => {
   assert.deepEqual(rabComparisonReport([item], { suppliers }).map(s => s.totals?.total), [1000000, 800000, 900000]);
 });
-test("percentage discount reduces each source total before the comparison grand total", () => {
+test("legacy percentage discount remains on the estimate source only", () => {
   const sources = rabComparisonReport([item], { suppliers, discount_type: "percent", discount_value: 10 });
-  assert.deepEqual(sources.map(s => s.totals?.discount), [100000, 80000, 90000]);
-  assert.deepEqual(sources.map(s => s.totals?.total), [900000, 720000, 810000]);
+  assert.deepEqual(sources.map(s => s.totals?.discount), [100000, 0, 0]);
+  assert.deepEqual(sources.map(s => s.totals?.total), [900000, 800000, 900000]);
 });
-test("rupiah discount reduces each source by the stored nominal amount", () => {
-  assert.deepEqual(rabComparisonReport([item], { suppliers, discount_type: "rupiah", discount_value: 100000 }).map(s => s.totals?.total), [900000, 700000, 800000]);
+test("rupiah discount remains on the selected legacy supplier", () => {
+  assert.deepEqual(rabComparisonReport([item], { suppliers, selected_price_source: a, discount_type: "rupiah", discount_value: 100000 }).map(s => s.totals?.total), [1000000, 700000, 900000]);
+});
+test("each supplier has its own optional percent or rupiah discount", () => {
+  const sources = rabComparisonReport([item], { suppliers, source_discounts: { [a]: { discount_type: "percent", discount_value: 10 }, [b]: { discount_type: "rupiah", discount_value: 50000 } } });
+  assert.deepEqual(sources.map(s => s.totals?.discount), [0, 80000, 50000]);
+  assert.deepEqual(sources.map(s => s.totals?.total), [1000000, 720000, 850000]);
 });
 test("cancelled rows do not inflate totals and incomplete supplier prices stay unknown", () => {
   const sources = rabComparisonReport([{ ...item, supplier_prices: { [a]: 80000 } }, { ...item, id: "cancelled", is_cancelled: true }], { suppliers });
