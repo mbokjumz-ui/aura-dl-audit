@@ -1,0 +1,1 @@
+DO $$ DECLARE body text; BEGIN SELECT pg_get_functiondef('public.save_rab_source_discount(uuid,text,text,numeric)'::regprocedure) INTO body; body:=replace(body,'public.stock_opname_items p WHERE p.id=i.parent_id AND p.is_cancelled','public.stock_opname_items parent_item WHERE parent_item.id=i.parent_id AND parent_item.is_cancelled'); EXECUTE body; END $$;
