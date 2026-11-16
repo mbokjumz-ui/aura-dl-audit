@@ -14,7 +14,7 @@ export function createPurchaseRabPdf(snapshot: PurchaseSnapshot) {
   pdf.text("RAB PEMBELIAN", 105, 15, { align: "center" });
   autoTable(pdf, { startY: 20, theme: "plain", styles: { fontSize: 9, cellPadding: 1.5, textColor: color("text") }, body: [["Proyek", snapshot.project_name], ["Divisi / lokasi", snapshot.division_location], ["Nomor disposisi", snapshot.disposition_number], ["Penanggung jawab", snapshot.responsible_name], ["Auditor", snapshot.auditor_name]] });
   autoTable(pdf, {
-    startY: (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY,
+    startY: (pdf as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 50,
     margin: { left: 8, right: 8, top: 10, bottom: 12 }, theme: "grid",
     styles: { fontSize: 8, cellPadding: 2, textColor: color("text"), lineColor: color("border"), lineWidth: 0.15 },
     headStyles: { fillColor: color("estimate-header"), textColor: color("text") },

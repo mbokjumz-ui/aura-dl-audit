@@ -66,6 +66,7 @@ function StockOpnamePage() {
   }, onSuccess: d => { client.invalidateQueries({ queryKey: ["stock-opname-projects"] }); setHeaderForm(null); setSelected(d.id); toast.success("RAB disimpan"); },
     onError: e => toast.error(e.message) });
   const active = list.data?.find(p => p.id === selected);
+  const headerEstimateLocked = !!headerForm?.id && !purchasePermissions(list.data.find(p => p.id === headerForm.id) ?? {}).editEstimate;
 
   return <div>
     {active ? <RabDetail rab={{ ...active, suppliers: readSuppliers(active.suppliers) }} items={active.stock_opname_items as OpnameItem[]} onBack={() => setSelected(undefined)} onEdit={() => setHeaderForm({ ...active, suppliers: readSuppliers(active.suppliers) })} />
@@ -84,11 +85,11 @@ function StockOpnamePage() {
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{headerForm?.id ? "Edit Header RAB" : "Buat RAB Proyek"}</DialogTitle></DialogHeader>
         {headerForm && <form className="space-y-3" onSubmit={e => { e.preventDefault(); saveHeader.mutate(headerForm); }}>
-          <Field label="Nama proyek"><Input value={headerForm.project_name} onChange={e => setHeaderForm({ ...headerForm, project_name: e.target.value })} required /></Field>
-          <Field label="Divisi / lokasi proyek"><Input value={headerForm.division_location} onChange={e => setHeaderForm({ ...headerForm, division_location: e.target.value })} /></Field>
-          <Field label="Nomor disposisi"><Input value={headerForm.disposition_number} onChange={e => setHeaderForm({ ...headerForm, disposition_number: e.target.value })} /></Field>
-           <Field label="Nama penanggung jawab project"><Input value={headerForm.responsible_name} onChange={e => setHeaderForm({ ...headerForm, responsible_name: e.target.value })} /></Field>
-           <Field label="Nama auditor stock opname"><Input value={headerForm.auditor_name} onChange={e => setHeaderForm({ ...headerForm, auditor_name: e.target.value })} /></Field>
+          <Field label="Nama proyek"><Input disabled={headerEstimateLocked} value={headerForm.project_name} onChange={e => setHeaderForm({ ...headerForm, project_name: e.target.value })} required /></Field>
+          <Field label="Divisi / lokasi proyek"><Input disabled={headerEstimateLocked} value={headerForm.division_location} onChange={e => setHeaderForm({ ...headerForm, division_location: e.target.value })} /></Field>
+          <Field label="Nomor disposisi"><Input disabled={headerEstimateLocked} value={headerForm.disposition_number} onChange={e => setHeaderForm({ ...headerForm, disposition_number: e.target.value })} /></Field>
+           <Field label="Nama penanggung jawab project"><Input disabled={headerEstimateLocked} value={headerForm.responsible_name} onChange={e => setHeaderForm({ ...headerForm, responsible_name: e.target.value })} /></Field>
+           <Field label="Nama auditor stock opname"><Input disabled={headerEstimateLocked} value={headerForm.auditor_name} onChange={e => setHeaderForm({ ...headerForm, auditor_name: e.target.value })} /></Field>
           <RabSupplierFields suppliers={headerForm.suppliers} onChange={suppliers => setHeaderForm({ ...headerForm, suppliers })} />
           <Button type="submit" className="w-full" disabled={saveHeader.isPending}>Simpan</Button>
         </form>}
@@ -133,7 +134,13 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (!f.description.trim()) throw new Error("Uraian pengerjaan wajib diisi.");
     const prices = supplierPricesSchema.parse(Object.fromEntries(Object.entries(f.supplier_prices).filter(([, v]) => v !== "").map(([k,v]) => [k, Number(v)])));
     if (!Number.isFinite(Number(f.quantity)) || Number(f.quantity) < 0 || !Number.isFinite(Number(f.unit_price)) || Number(f.unit_price) < 0) throw new Error("Jumlah dan harga harus angka positif atau nol.");
-    const values = !purchase.editEstimate ? { supplier_prices: prices } : { estimated_unit_price: Number(f.unit_price) || 0, supplier_prices: prices, rab_id: rab.id, parent_id: f.parent_id, description: f.description.trim(), quantity: Number(f.quantity) || 0, unit: f.unit.trim(), unit_price: Number(f.unit_price) || 0 };
+    if (!purchase.editEstimate) {
+      if (!f.id) throw new Error("Rincian perkiraan Pembelian sudah terkunci.");
+      const result = await supabase.from("stock_opname_items").update({ supplier_prices: prices }).eq("id", f.id);
+      if (result.error) throw result.error;
+      return;
+    }
+    const values = { estimated_unit_price: Number(f.unit_price) || 0, supplier_prices: prices, rab_id: rab.id, parent_id: f.parent_id, description: f.description.trim(), quantity: Number(f.quantity) || 0, unit: f.unit.trim(), unit_price: Number(f.unit_price) || 0 };
     const r = f.id ? await supabase.from("stock_opname_items").update(values).eq("id", f.id)
       : await supabase.from("stock_opname_items").insert({ ...values, sort_order: items.length });
     if (r.error) throw r.error;
