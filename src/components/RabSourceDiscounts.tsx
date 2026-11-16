@@ -10,11 +10,13 @@ import { rupiah, type OpnameItem } from "@/lib/stock-opname";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { purchasePermissions } from "@/lib/rab-purchase";
 
 export function RabSourceDiscounts({ rab, items, editable, onSaved }: { rab: FinalizedRab & { id: string }; items: OpnameItem[]; editable: boolean; onSaved: () => void }) {
   return <section className="mt-5 border-y border-border py-4"><h2 className="mb-3 font-semibold">Diskon Perkiraan Pembelian & Supplier</h2><div className="divide-y divide-border">{priceComparisons(items, readSuppliers(rab.suppliers)).map(source => {
     const discount = sourceDiscount(rab, source.id);
-    return <DiscountRow key={`${source.id}:${discount.discount_type}:${discount.discount_value}`} rabId={rab.id} source={source} discount={discount} editable={editable} onSaved={onSaved} />;
+    const permissions = purchasePermissions(rab);
+    return <DiscountRow key={`${source.id}:${discount.discount_type}:${discount.discount_value}`} rabId={rab.id} source={source} discount={discount} editable={editable && (source.id === "estimate" ? permissions.editEstimate : permissions.editSuppliers)} onSaved={onSaved} />;
   })}</div></section>;
 }
 
