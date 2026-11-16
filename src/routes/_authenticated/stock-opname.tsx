@@ -24,6 +24,8 @@ import { RabSupplierFields } from "@/components/RabSupplierFields";
 import { readSuppliers, readSupplierPrices, supplierSchema, supplierPricesSchema, sourcePrice } from "@/lib/rab-pricing";
 import { StockOpnameProgress } from "@/components/StockOpnameProgress";
 import { RabSourceDiscounts } from "@/components/RabSourceDiscounts";
+import { purchasePermissions } from "@/lib/rab-purchase";
+import { RabPurchaseApproval } from "@/components/RabPurchaseApproval";
 
 export const Route = createFileRoute("/_authenticated/stock-opname")({
   validateSearch: (search: Record<string, unknown>): { rab?: string } => typeof search["rab"] === "string" ? { rab: search["rab"] } : {},
@@ -64,6 +66,7 @@ function StockOpnamePage() {
   }, onSuccess: d => { client.invalidateQueries({ queryKey: ["stock-opname-projects"] }); setHeaderForm(null); setSelected(d.id); toast.success("RAB disimpan"); },
     onError: e => toast.error(e.message) });
   const active = list.data?.find(p => p.id === selected);
+  const headerEstimateLocked = !!headerForm?.id && !purchasePermissions(list.data.find(p => p.id === headerForm.id) ?? {}).editEstimate;
 
   return <div>
     {active ? <RabDetail rab={{ ...active, suppliers: readSuppliers(active.suppliers) }} items={active.stock_opname_items as OpnameItem[]} onBack={() => setSelected(undefined)} onEdit={() => setHeaderForm({ ...active, suppliers: readSuppliers(active.suppliers) })} />
@@ -82,11 +85,11 @@ function StockOpnamePage() {
     <Dialog open={!!headerForm} onOpenChange={o => !o && setHeaderForm(null)}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{headerForm?.id ? "Edit Header RAB" : "Buat RAB Proyek"}</DialogTitle></DialogHeader>
         {headerForm && <form className="space-y-3" onSubmit={e => { e.preventDefault(); saveHeader.mutate(headerForm); }}>
-          <Field label="Nama proyek"><Input value={headerForm.project_name} onChange={e => setHeaderForm({ ...headerForm, project_name: e.target.value })} required /></Field>
-          <Field label="Divisi / lokasi proyek"><Input value={headerForm.division_location} onChange={e => setHeaderForm({ ...headerForm, division_location: e.target.value })} /></Field>
-          <Field label="Nomor disposisi"><Input value={headerForm.disposition_number} onChange={e => setHeaderForm({ ...headerForm, disposition_number: e.target.value })} /></Field>
-           <Field label="Nama penanggung jawab project"><Input value={headerForm.responsible_name} onChange={e => setHeaderForm({ ...headerForm, responsible_name: e.target.value })} /></Field>
-           <Field label="Nama auditor stock opname"><Input value={headerForm.auditor_name} onChange={e => setHeaderForm({ ...headerForm, auditor_name: e.target.value })} /></Field>
+          <Field label="Nama proyek"><Input disabled={headerEstimateLocked} value={headerForm.project_name} onChange={e => setHeaderForm({ ...headerForm, project_name: e.target.value })} required /></Field>
+          <Field label="Divisi / lokasi proyek"><Input disabled={headerEstimateLocked} value={headerForm.division_location} onChange={e => setHeaderForm({ ...headerForm, division_location: e.target.value })} /></Field>
+          <Field label="Nomor disposisi"><Input disabled={headerEstimateLocked} value={headerForm.disposition_number} onChange={e => setHeaderForm({ ...headerForm, disposition_number: e.target.value })} /></Field>
+           <Field label="Nama penanggung jawab project"><Input disabled={headerEstimateLocked} value={headerForm.responsible_name} onChange={e => setHeaderForm({ ...headerForm, responsible_name: e.target.value })} /></Field>
+           <Field label="Nama auditor stock opname"><Input disabled={headerEstimateLocked} value={headerForm.auditor_name} onChange={e => setHeaderForm({ ...headerForm, auditor_name: e.target.value })} /></Field>
           <RabSupplierFields suppliers={headerForm.suppliers} onChange={suppliers => setHeaderForm({ ...headerForm, suppliers })} />
           <Button type="submit" className="w-full" disabled={saveHeader.isPending}>Simpan</Button>
         </form>}
@@ -115,6 +118,8 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
   const [exporting, setExporting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const locked = !!rab.finalized_at;
+  const purchase = purchasePermissions(rab);
+  const estimateLocked = locked || !purchase.editEstimate;
   const refresh = () => client.invalidateQueries({ queryKey: ["stock-opname-projects"] });
   const suppliers = readSuppliers(rab.suppliers);
   const activeItems = activeRabItems(items);
@@ -129,6 +134,12 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (!f.description.trim()) throw new Error("Uraian pengerjaan wajib diisi.");
     const prices = supplierPricesSchema.parse(Object.fromEntries(Object.entries(f.supplier_prices).filter(([, v]) => v !== "").map(([k,v]) => [k, Number(v)])));
     if (!Number.isFinite(Number(f.quantity)) || Number(f.quantity) < 0 || !Number.isFinite(Number(f.unit_price)) || Number(f.unit_price) < 0) throw new Error("Jumlah dan harga harus angka positif atau nol.");
+    if (!purchase.editEstimate) {
+      if (!f.id) throw new Error("Rincian perkiraan Pembelian sudah terkunci.");
+      const result = await supabase.from("stock_opname_items").update({ supplier_prices: prices }).eq("id", f.id);
+      if (result.error) throw result.error;
+      return;
+    }
     const values = { estimated_unit_price: Number(f.unit_price) || 0, supplier_prices: prices, rab_id: rab.id, parent_id: f.parent_id, description: f.description.trim(), quantity: Number(f.quantity) || 0, unit: f.unit.trim(), unit_price: Number(f.unit_price) || 0 };
     const r = f.id ? await supabase.from("stock_opname_items").update(values).eq("id", f.id)
       : await supabase.from("stock_opname_items").insert({ ...values, sort_order: items.length });
@@ -161,7 +172,9 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     if (approvals.error) throw approvals.error;
     const printDocuments = await supabase.from("rab_print_documents").select("file_path").eq("rab_id", rab.id);
     if (printDocuments.error) throw printDocuments.error;
-    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path), ...printDocuments.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
+    const purchaseDocuments = await supabase.from("rab_purchase_documents").select("file_path").eq("rab_id", rab.id);
+    if (purchaseDocuments.error) throw purchaseDocuments.error;
+    const paths = [...await filePaths(items.map(i => i.id)), ...approvals.data.map(d => d.file_path), ...printDocuments.data.map(d => d.file_path), ...purchaseDocuments.data.map(d => d.file_path)]; const r = await supabase.from("stock_opname_projects").delete().eq("id", rab.id); if (r.error) throw r.error; await cleanupFiles(paths);
   },
     onSuccess: () => { onBack(); refresh(); toast.success("RAB dihapus"); }, onError: e => toast.error(e.message) });
   const saveActual = useMutation({ mutationFn: async ({ id, value }: { id: string; value: string }) => {
@@ -216,10 +229,10 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
       <td className="p-2 text-right">{rupiah(rabAmt)}</td>
       {tab === "rab" && !locked && suppliers.map(s => <td key={s.id} className="p-2 text-right">{group ? "" : sourcePrice(i, s.id) === null ? "—" : rupiah(sourcePrice(i,s.id) ?? 0)}</td>)}
       {tab === "rab" ? <td className="p-2"><div className="flex justify-end gap-1">
-        {!locked && <>{level === 0 && <Button size="icon" variant="ghost" aria-label="Tambah sub-poin" onClick={() => setForm({ parent_id: i.id, description: "", quantity: "", unit: "", unit_price: "", supplier_prices: {} })}><Plus /></Button>}
+        {!locked && <>{!estimateLocked && level === 0 && <Button size="icon" variant="ghost" aria-label="Tambah sub-poin" onClick={() => setForm({ parent_id: i.id, description: "", quantity: "", unit: "", unit_price: "", supplier_prices: {} })}><Plus /></Button>}
         <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => edit(i)}><Pencil /></Button>
         <Button size="icon" variant="ghost" title={i.is_cancelled ? "Aktifkan pengerjaan" : "Tidak jadi dikerjakan"} aria-label={i.is_cancelled ? "Aktifkan pengerjaan" : "Tidak jadi dikerjakan"} disabled={cancelItem.isPending || items.some(p => p.id === i.parent_id && p.is_cancelled)} onClick={() => cancelItem.mutate(i)}>{i.is_cancelled ? <RotateCcw /> : <Ban />}</Button>
-        <Button size="icon" variant="ghost" aria-label="Hapus" disabled={!canEditActual && (i.actual_quantity !== null || !!group?.some(child => child.actual_quantity !== null))} onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button></>}</div></td>
+        {!estimateLocked && <Button size="icon" variant="ghost" aria-label="Hapus" disabled={!canEditActual && (i.actual_quantity !== null || !!group?.some(child => child.actual_quantity !== null))} onClick={() => removeItem.mutate(i.id)}><Trash2 /></Button>}</>}</div></td>
       : <>
         <td className="p-2">{group ? "" : canEditActual ? <Input aria-label={`Jumlah riil ${i.description}`} type="number" min="0" step="any" className="h-8 w-24 text-right" defaultValue={i.actual_quantity ?? ""} onBlur={e => { if (e.target.value !== String(i.actual_quantity ?? "")) saveActual.mutate({ id: i.id, value: e.target.value }); }} /> : <span className="block text-right tabular-nums">{i.actual_quantity?.toLocaleString("id-ID") ?? "—"}</span>}</td>
         <td className="p-2 text-right">{actAmt === null ? "—" : rupiah(actAmt)}</td>
@@ -236,10 +249,10 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <p className="mt-1 text-sm text-muted-foreground">Divisi/lokasi: {rab.division_location || "—"} · No. disposisi: {rab.disposition_number || "—"}</p>
         <p className="mt-1 text-sm text-muted-foreground">Penanggung jawab: {rab.responsible_name || "—"} · Auditor: {rab.auditor_name || "—"}</p>
         <p className="mt-2 text-sm font-semibold text-primary">{rab.status === "selesai" ? `Selesai${rab.completed_at ? ` · ${new Date(rab.completed_at).toLocaleDateString("id-ID")}` : ""}` : "Berjalan"}</p></div>
-      <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>{canFinalize && <Button variant="outline" disabled={!items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button>}</>}
+      <div className="flex flex-wrap gap-2">{!locked && <><Button variant="outline" onClick={onEdit}><Pencil />Header</Button>{canFinalize && <Button variant="outline" disabled={!purchase.canFinalize || !items.length || saveItem.isPending || removeItem.isPending || removeRab.isPending} onClick={() => setFinalizing(true)}><LockKeyhole />Finalisasi RAB</Button>}</>}
         <RabRevisionControls key={rab.id} rabId={rab.id} finalized={locked} signedLocked={!!rab.signed_locked_at} canRevise={canFinalize} />
         <Button variant="outline" disabled={exporting || saveActual.isPending} onClick={exportPdf}><FileDown />{exporting ? "Membuat PDF…" : "Cetak SO"}</Button>
-        <Button variant="outline" disabled={exporting} onClick={exportComparison}><FileDown />Cetak Perbandingan Harga</Button>
+        <Button variant="outline" disabled={exporting || !purchase.editSuppliers} onClick={exportComparison}><FileDown />Cetak Perbandingan Harga</Button>
         <Button variant="outline" disabled={!locked || exporting || removeRab.isPending} onClick={exportRab}><FileDown />Cetak RAB</Button>
         {canEditActual && <Button disabled={complete.isPending || saveActual.isPending} onClick={() => {
           const done = rab.status !== "selesai";
@@ -248,6 +261,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         }}>{rab.status === "selesai" ? <RotateCcw /> : <CheckCircle2 />}{rab.status === "selesai" ? "Buka Kembali" : "Tandai Selesai"}</Button>}
         {(!locked || canDeleteFinal) && <Button variant="outline" disabled={removeRab.isPending || saveActual.isPending || complete.isPending || saveItem.isPending || (!canEditActual && items.some(item => item.actual_quantity !== null))} onClick={() => confirm(locked ? "Hapus permanen RAB final ini beserta seluruh rincian, hasil opname, dan lampirannya? Tindakan ini tidak dapat dibatalkan." : "Hapus RAB ini beserta seluruh isinya?") && removeRab.mutate()}><Trash2 />{removeRab.isPending ? "Menghapus…" : "Hapus"}</Button>}</div>
     </div>
+    {purchase.gated && <RabPurchaseApproval rab={rab} items={items} />}
     <section className="mb-4 border-y border-border py-3 text-sm"><h2 className="font-semibold">Supplier Pembanding</h2><p className="mt-1 break-words">{suppliers.map(s => s.name).join(" · ") || "—"}</p>{locked && <p className="mt-2 font-semibold text-primary">Acuan harga: {suppliers.find(s => s.id === rab.selected_price_source)?.name ?? "Perkiraan Pembelian"}</p>}</section>
     {(locked || !!rab.revision_number) && <p className="mb-5 flex flex-wrap items-center gap-2 border-y border-border py-3 text-sm font-semibold text-primary"><LockKeyhole className="h-4 w-4" />{rab.signed_locked_at ? "RAB Ditandatangani · Terkunci Permanen" : locked ? "RAB Final" : "RAB Dalam Revisi"}{rab.revision_number ? ` · rev${rab.revision_number}` : ""}{locked && rab.finalized_at ? ` · ${new Date(rab.finalized_at).toLocaleDateString("id-ID")}` : ""}</p>}
     <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -261,7 +275,7 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
         <Button size="sm" variant={tab === "rab" ? "default" : "ghost"} onClick={() => setTab("rab")}>1. RAB</Button>
         <Button size="sm" variant={tab === "opname" ? "default" : "ghost"} onClick={() => setTab("opname")} disabled={!items.length}>2. Stock Opname</Button>
       </div>
-      {tab === "rab" && !locked && <Button onClick={() => setForm({ parent_id: null, description: "", quantity: "", unit: "", unit_price: "", supplier_prices: {} })}><Plus />Tambah Poin</Button>}
+      {tab === "rab" && !estimateLocked && <Button onClick={() => setForm({ parent_id: null, description: "", quantity: "", unit: "", unit_price: "", supplier_prices: {} })}><Plus />Tambah Poin</Button>}
     </div>
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <table className="w-full min-w-[720px] text-sm">
@@ -296,8 +310,8 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
     <Dialog open={!!form} onOpenChange={o => !o && setForm(null)}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{form?.id ? "Edit" : "Tambah"} {form?.parent_id ? "Sub-poin" : "Poin"} Pengerjaan</DialogTitle></DialogHeader>
         {form && <form className="space-y-3" onSubmit={e => { e.preventDefault(); saveItem.mutate(form); }}>
-          <Field label="Uraian / detil pengerjaan"><Textarea ref={descriptionRef} rows={5} className="min-h-32 resize-y" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required /></Field>
-          <Button type="button" variant="outline" size="sm" onClick={() => {
+          <Field label="Uraian / detil pengerjaan"><Textarea disabled={estimateLocked} ref={descriptionRef} rows={5} className="min-h-32 resize-y" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required /></Field>
+          <Button disabled={estimateLocked} type="button" variant="outline" size="sm" onClick={() => {
             const input = descriptionRef.current;
             const start = input?.selectionStart ?? form.description.length;
             const end = input?.selectionEnd ?? start;
@@ -306,11 +320,11 @@ function RabDetail({ rab, items, onBack, onEdit }: { rab: { id: string; status: 
           }}><Plus />Tambah Baris</Button>
           {hasChildren(form.id) ? <p className="text-xs text-muted-foreground">Poin ini punya sub-poin; amount dihitung dari sub-poinnya.</p> : <>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Jumlah"><Input type="number" min="0" step="any" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></Field>
-              <Field label="Satuan"><Input value={form.unit} placeholder="m², unit, ls…" onChange={e => setForm({ ...form, unit: e.target.value })} /></Field>
+              <Field label="Jumlah"><Input disabled={estimateLocked} type="number" min="0" step="any" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></Field>
+              <Field label="Satuan"><Input disabled={estimateLocked} value={form.unit} placeholder="m², unit, ls…" onChange={e => setForm({ ...form, unit: e.target.value })} /></Field>
             </div>
-            <Field label="Nilai Perkiraan Pembelian (Rp)"><Input type="number" min="0" step="any" value={form.unit_price} onChange={e => setForm({ ...form, unit_price: e.target.value })} /></Field>
-            {suppliers.map(s => <Field key={s.id} label={`Nilai ${s.name} (Rp)`}><Input type="number" min="0" max="100000000000000" step="any" value={form.supplier_prices[s.id] ?? ""} onChange={e => setForm({ ...form, supplier_prices: { ...form.supplier_prices, [s.id]: e.target.value } })} /></Field>)}
+            <Field label="Nilai Perkiraan Pembelian (Rp)"><Input disabled={estimateLocked} type="number" min="0" step="any" value={form.unit_price} onChange={e => setForm({ ...form, unit_price: e.target.value })} /></Field>
+            {suppliers.map(s => <Field key={s.id} label={`Nilai ${s.name} (Rp)`}><Input disabled={!purchase.editSuppliers} type="number" min="0" max="100000000000000" step="any" value={form.supplier_prices[s.id] ?? ""} onChange={e => setForm({ ...form, supplier_prices: { ...form.supplier_prices, [s.id]: e.target.value } })} /></Field>)}
             <p className="text-sm">Amount: <b>{rupiah(lineAmount(Number(form.quantity) || 0, Number(form.unit_price) || 0))}</b></p>
             {!form.parent_id && !form.id && <p className="text-xs text-muted-foreground">Kosongkan jumlah/nilai bila poin ini akan diisi sub-poin.</p>}
           </>}

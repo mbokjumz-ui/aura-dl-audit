@@ -38,3 +38,4 @@
 - Store per-source RAB discounts separately from the finalized discount snapshot; resolve the selected source atomically at finalization and in comparison summaries, preserving legacy selected-source discounts and raw opname progress.
 - Keep estimate prices and supplier-ID-keyed item quotes separate from effective unit prices; atomically select prices at finalization and filter cancelled branches through shared helpers so retained comparisons never inflate budgets or opname progress.
 - Generate the comparison PDF as a shared matrix with per-source totals from rab-comparison-report; repeat identity/estimate columns on overflow pages to keep unlimited supplier comparisons readable.
+- Gate new RABs through a row-locked purchase print snapshot and private append-only approval PDF; freeze estimate scope/prices/discount after approval and unlock supplier quotes, preserving legacy workflows and finalization as a separate gate.

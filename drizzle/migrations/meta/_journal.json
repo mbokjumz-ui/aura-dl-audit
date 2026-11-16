@@ -218,6 +218,13 @@
       "when": 1794790987141,
       "tag": "0030_replace_permissive_true_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794815923969,
+      "tag": "0031_purchase_rab_approval_gate",
+      "breakpoints": true
     }
   ]
 }

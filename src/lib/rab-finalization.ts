@@ -10,6 +10,9 @@ export const rabFinalizationSchema = z.object({
 });
 export type RabFinalization = z.infer<typeof rabFinalizationSchema>;
 export type FinalizedRab = {
+  purchase_approval_required?: boolean;
+  purchase_approved_at?: string | null;
+  purchase_printed_at?: string | null;
   source_discounts?: unknown;
   suppliers?: unknown;
   selected_price_source?: string;
