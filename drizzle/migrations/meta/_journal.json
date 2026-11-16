@@ -211,6 +211,13 @@
       "when": 1794779749821,
       "tag": "0029_repair_source_discount_parent_alias",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794790987141,
+      "tag": "0030_replace_permissive_true_policies",
+      "breakpoints": true
     }
   ]
 }
