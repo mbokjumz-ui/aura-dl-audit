@@ -1,0 +1,51 @@
+ALTER TABLE public.stock_opname_projects ADD COLUMN purchase_approval_required boolean NOT NULL DEFAULT false, ADD COLUMN purchase_printed_at timestamptz, ADD COLUMN purchase_print_snapshot jsonb, ADD COLUMN purchase_approved_at timestamptz;
+ALTER TABLE public.stock_opname_projects ALTER COLUMN purchase_approval_required SET DEFAULT true;
+CREATE TABLE public.rab_purchase_documents (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), rab_id uuid NOT NULL REFERENCES public.stock_opname_projects(id) ON DELETE CASCADE, file_name text NOT NULL, file_path text NOT NULL UNIQUE, content_type text NOT NULL CHECK(content_type='application/pdf'), file_size bigint NOT NULL CHECK(file_size>0 AND file_size<=20971520), created_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT, INSERT ON public.rab_purchase_documents TO authenticated;
+GRANT ALL ON public.rab_purchase_documents TO service_role;
+ALTER TABLE public.rab_purchase_documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Stock roles read purchase approvals" ON public.rab_purchase_documents FOR SELECT TO authenticated USING(public.has_role(auth.uid(),'internal_audit') OR public.has_role(auth.uid(),'purchasing'));
+CREATE POLICY "Stock roles insert purchase approvals" ON public.rab_purchase_documents FOR INSERT TO authenticated WITH CHECK(public.has_role(auth.uid(),'internal_audit') OR public.has_role(auth.uid(),'purchasing'));
+CREATE FUNCTION public.purchase_rab_snapshot(_id uuid) RETURNS jsonb LANGUAGE sql STABLE SET search_path=public AS $$ SELECT jsonb_build_object('project_name',p.project_name,'division_location',p.division_location,'disposition_number',p.disposition_number,'responsible_name',p.responsible_name,'auditor_name',p.auditor_name,'discount',COALESCE(p.source_discounts->'estimate','{"discount_type":"rupiah","discount_value":0}'::jsonb),'items',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',i.id,'parent_id',i.parent_id,'description',i.description,'quantity',i.quantity,'unit',i.unit,'unit_price',COALESCE(i.estimated_unit_price,i.unit_price),'estimated_unit_price',COALESCE(i.estimated_unit_price,i.unit_price),'is_cancelled',i.is_cancelled,'sort_order',i.sort_order,'actual_quantity',NULL) ORDER BY i.sort_order,i.id) FROM public.stock_opname_items i WHERE i.rab_id=p.id),'[]'::jsonb)) FROM public.stock_opname_projects p WHERE p.id=_id $$;
+CREATE FUNCTION public.print_purchase_rab(_rab_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE p record; s jsonb; BEGIN
+IF NOT(public.has_role(auth.uid(),'internal_audit') OR public.has_role(auth.uid(),'purchasing')) THEN RAISE EXCEPTION 'Akses RAB Pembelian ditolak.'; END IF;
+SELECT * INTO p FROM public.stock_opname_projects WHERE id=_rab_id FOR UPDATE;
+IF NOT FOUND OR NOT p.purchase_approval_required THEN RAISE EXCEPTION 'Alur ini hanya untuk RAB baru.'; END IF;
+IF p.purchase_approved_at IS NOT NULL THEN RETURN p.purchase_print_snapshot; END IF;
+IF NOT EXISTS(SELECT 1 FROM public.stock_opname_items i WHERE i.rab_id=_rab_id AND NOT i.is_cancelled AND NOT EXISTS(SELECT 1 FROM public.stock_opname_items c WHERE c.parent_id=i.id) AND NOT EXISTS(SELECT 1 FROM public.stock_opname_items parent WHERE parent.id=i.parent_id AND parent.is_cancelled)) THEN RAISE EXCEPTION 'Susun rincian perkiraan pembelian terlebih dahulu.'; END IF;
+IF EXISTS(SELECT 1 FROM public.stock_opname_items i WHERE i.rab_id=_rab_id AND NOT i.is_cancelled AND NOT EXISTS(SELECT 1 FROM public.stock_opname_items c WHERE c.parent_id=i.id) AND (btrim(i.description)='' OR btrim(i.unit)='' OR i.quantity<=0 OR COALESCE(i.estimated_unit_price,i.unit_price)<=0)) THEN RAISE EXCEPTION 'Lengkapi uraian, jumlah, satuan, dan harga perkiraan pembelian.'; END IF;
+s:=public.purchase_rab_snapshot(_rab_id); UPDATE public.stock_opname_projects SET purchase_printed_at=clock_timestamp(),purchase_print_snapshot=s WHERE id=_rab_id; RETURN s; END $$;
+REVOKE ALL ON FUNCTION public.print_purchase_rab(uuid) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.print_purchase_rab(uuid) TO authenticated;
+CREATE FUNCTION public.protect_purchase_rab_project() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN
+IF TG_OP='INSERT' THEN NEW.purchase_approval_required:=true; IF NEW.purchase_approved_at IS NOT NULL OR NEW.purchase_print_snapshot IS NOT NULL OR NEW.purchase_printed_at IS NOT NULL THEN RAISE EXCEPTION 'Persetujuan memerlukan cetak dan unggah dokumen.'; END IF; RETURN NEW; END IF;
+IF NEW.purchase_approval_required IS DISTINCT FROM OLD.purchase_approval_required THEN RAISE EXCEPTION 'Alur persetujuan tidak dapat diubah.'; END IF;
+IF current_user<>'postgres' AND (NEW.purchase_approved_at IS DISTINCT FROM OLD.purchase_approved_at OR NEW.purchase_print_snapshot IS DISTINCT FROM OLD.purchase_print_snapshot OR NEW.purchase_printed_at IS DISTINCT FROM OLD.purchase_printed_at) THEN RAISE EXCEPTION 'Gunakan cetak dan unggah persetujuan Pembelian.'; END IF;
+IF OLD.purchase_approved_at IS NOT NULL AND OLD.purchase_approval_required THEN
+IF OLD.purchase_approved_at IS DISTINCT FROM NEW.purchase_approved_at OR OLD.purchase_print_snapshot IS DISTINCT FROM NEW.purchase_print_snapshot THEN RAISE EXCEPTION 'Persetujuan Pembelian sudah terkunci.'; END IF;
+IF (to_jsonb(NEW)->'project_name',to_jsonb(NEW)->'division_location',to_jsonb(NEW)->'disposition_number',to_jsonb(NEW)->'responsible_name',to_jsonb(NEW)->'auditor_name') IS DISTINCT FROM (to_jsonb(OLD)->'project_name',to_jsonb(OLD)->'division_location',to_jsonb(OLD)->'disposition_number',to_jsonb(OLD)->'responsible_name',to_jsonb(OLD)->'auditor_name') OR COALESCE(NEW.source_discounts->'estimate','{"discount_type":"rupiah","discount_value":0}'::jsonb) IS DISTINCT FROM COALESCE(OLD.source_discounts->'estimate','{"discount_type":"rupiah","discount_value":0}'::jsonb) THEN RAISE EXCEPTION 'Rincian dan diskon Pembelian sudah terkunci.'; END IF;
+END IF;
+IF NEW.purchase_approval_required AND NEW.purchase_approved_at IS NULL THEN
+IF NEW.finalized_at IS NOT NULL OR NEW.selected_price_source<>'estimate' THEN RAISE EXCEPTION 'Unggah persetujuan RAB Pembelian terlebih dahulu.'; END IF;
+IF (COALESCE(NEW.source_discounts,'{}'::jsonb)-'estimate') IS DISTINCT FROM (COALESCE(OLD.source_discounts,'{}'::jsonb)-'estimate') THEN RAISE EXCEPTION 'Diskon supplier belum dibuka.'; END IF; END IF; RETURN NEW; END $$;
+CREATE TRIGGER zz_purchase_project_guard BEFORE INSERT OR UPDATE ON public.stock_opname_projects FOR EACH ROW EXECUTE FUNCTION public.protect_purchase_rab_project();
+CREATE FUNCTION public.protect_purchase_rab_item() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ DECLARE p record; old_id uuid; new_id uuid; BEGIN
+IF TG_OP='DELETE' AND auth.role()='service_role' THEN RETURN OLD; END IF;
+IF TG_OP<>'INSERT' THEN old_id:=OLD.rab_id; END IF; IF TG_OP<>'DELETE' THEN new_id:=NEW.rab_id; END IF;
+FOR p IN SELECT * FROM public.stock_opname_projects WHERE id IN(old_id,new_id) ORDER BY id FOR UPDATE LOOP
+IF NOT p.purchase_approval_required THEN CONTINUE; END IF;
+IF p.purchase_approved_at IS NULL THEN IF TG_OP<>'DELETE' AND NEW.supplier_prices<>'{}'::jsonb THEN RAISE EXCEPTION 'Unggah persetujuan Pembelian untuk membuka harga supplier.'; END IF;
+ELSE
+IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'Rincian perkiraan Pembelian sudah terkunci.'; END IF;
+IF (NEW.rab_id,NEW.parent_id,NEW.description,NEW.quantity,NEW.unit,NEW.estimated_unit_price,NEW.sort_order) IS DISTINCT FROM (OLD.rab_id,OLD.parent_id,OLD.description,OLD.quantity,OLD.unit,OLD.estimated_unit_price,OLD.sort_order) THEN RAISE EXCEPTION 'Rincian perkiraan Pembelian sudah terkunci.'; END IF;
+END IF; END LOOP; IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW; END $$;
+CREATE TRIGGER zz_purchase_item_guard BEFORE INSERT OR UPDATE OR DELETE ON public.stock_opname_items FOR EACH ROW EXECUTE FUNCTION public.protect_purchase_rab_item();
+CREATE FUNCTION public.approve_purchase_rab_upload() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE p record; BEGIN
+IF NOT(public.has_role(auth.uid(),'internal_audit') OR public.has_role(auth.uid(),'purchasing')) THEN RAISE EXCEPTION 'Akses persetujuan ditolak.'; END IF;
+SELECT * INTO p FROM public.stock_opname_projects WHERE id=NEW.rab_id FOR UPDATE;
+IF NOT FOUND OR NOT p.purchase_approval_required OR p.purchase_approved_at IS NOT NULL THEN RAISE EXCEPTION 'RAB tidak tersedia untuk persetujuan Pembelian.'; END IF;
+IF p.purchase_printed_at IS NULL OR p.purchase_print_snapshot IS DISTINCT FROM public.purchase_rab_snapshot(NEW.rab_id) THEN RAISE EXCEPTION 'Rincian berubah atau belum dicetak. Cetak ulang RAB Pembelian sebelum unggah persetujuan.'; END IF;
+IF NEW.file_path NOT LIKE 'rab-purchase/'||NEW.rab_id::text||'/%' OR lower(right(NEW.file_path,4))<>'.pdf' OR NOT EXISTS(SELECT 1 FROM storage.objects o WHERE o.bucket_id='stock-opname-documents' AND o.name=NEW.file_path AND (o.metadata->>'size')::bigint=NEW.file_size) THEN RAISE EXCEPTION 'PDF persetujuan tidak ditemukan atau tidak valid.'; END IF;
+UPDATE public.stock_opname_projects SET purchase_approved_at=clock_timestamp() WHERE id=NEW.rab_id; RETURN NEW; END $$;
+CREATE TRIGGER purchase_document_approval BEFORE INSERT ON public.rab_purchase_documents FOR EACH ROW EXECUTE FUNCTION public.approve_purchase_rab_upload();
+CREATE POLICY "Stock roles upload purchase approval PDF" ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='stock-opname-documents' AND (storage.foldername(name))[1]='rab-purchase' AND lower(storage.extension(name))='pdf' AND (public.has_role(auth.uid(),'internal_audit') OR public.has_role(auth.uid(),'purchasing')) AND EXISTS(SELECT 1 FROM public.stock_opname_projects p WHERE p.id::text=(storage.foldername(name))[2] AND p.purchase_approval_required AND p.purchase_printed_at IS NOT NULL AND p.purchase_approved_at IS NULL));
+CREATE POLICY "Keep purchase approval evidence" ON storage.objects AS RESTRICTIVE FOR DELETE TO authenticated USING(bucket_id<>'stock-opname-documents' OR (storage.foldername(name))[1]<>'rab-purchase' OR NOT EXISTS(SELECT 1 FROM public.rab_purchase_documents d WHERE d.file_path=name));

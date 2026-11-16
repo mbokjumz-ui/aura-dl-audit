@@ -600,6 +600,44 @@ export type Database = {
           },
         ]
       }
+      rab_purchase_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          rab_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          rab_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          rab_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rab_purchase_documents_rab_id_fkey"
+            columns: ["rab_id"]
+            isOneToOne: false
+            referencedRelation: "stock_opname_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rab_revisions: {
         Row: {
           created_at: string
@@ -843,6 +881,10 @@ export type Database = {
           finalized_at: string | null
           id: string
           project_name: string
+          purchase_approval_required: boolean
+          purchase_approved_at: string | null
+          purchase_print_snapshot: Json | null
+          purchase_printed_at: string | null
           responsible_name: string
           responsible_position: string
           revision_number: number
@@ -874,6 +916,10 @@ export type Database = {
           finalized_at?: string | null
           id?: string
           project_name: string
+          purchase_approval_required?: boolean
+          purchase_approved_at?: string | null
+          purchase_print_snapshot?: Json | null
+          purchase_printed_at?: string | null
           responsible_name?: string
           responsible_position?: string
           revision_number?: number
@@ -905,6 +951,10 @@ export type Database = {
           finalized_at?: string | null
           id?: string
           project_name?: string
+          purchase_approval_required?: boolean
+          purchase_approved_at?: string | null
+          purchase_print_snapshot?: Json | null
+          purchase_printed_at?: string | null
           responsible_name?: string
           responsible_position?: string
           revision_number?: number
@@ -1028,6 +1078,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      print_purchase_rab: { Args: { _rab_id: string }; Returns: Json }
+      purchase_rab_snapshot: { Args: { _id: string }; Returns: Json }
       rab_source_discount: {
         Args: {
           _discounts: Json
