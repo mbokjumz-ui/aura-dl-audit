@@ -35,7 +35,8 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.equal(printAttachment.error, null); assert.ok(printAttachment.data);
     assert.equal((await audit.from("rab_print_documents").select("id").eq("rab_id", rabId)).data?.length, 1);
     const draft = { vatIncluded: true, note: "Draft belum lengkap", contractors: [{ name: "Kontraktor", amount: "" }], approvers: [{ name: "", position: "" }], acknowledgers: [{ name: "", position: "" }], workDays: "", workStartDate: "", downPayment: "30", responsiblePosition: "" };
-    for (const client of clients) {
+    for (const entry of clients) {
+      const client: SupabaseClient = entry;
       assert.equal((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error, null);
       const savedDraft = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
       assert.equal(savedDraft.error, null);
@@ -89,7 +90,8 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const read = await buyer.from("stock_opname_projects").select("finalized_at,vat_included,stock_opname_items(quantity,actual_quantity)").eq("id", rabId).single();
     assert.ok(read.data?.finalized_at); assert.equal(read.data?.vat_included, true);
     assert.equal(read.data?.stock_opname_items[0]?.quantity, 10); assert.equal(read.data?.stock_opname_items[0]?.actual_quantity, 9);
-    for (const [index, client] of clients.entries()) {
+    for (const [index, entry] of clients.entries()) {
+      const client: SupabaseClient = entry;
       assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "   " })).error);
       const reason = index === 0 ? "Revisi saat pengajuan tanda tangan" : "Revisi kedua nilai pekerjaan";
       const reopened = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
