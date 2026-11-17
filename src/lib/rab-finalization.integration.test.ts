@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { approveTestPurchase } from "./rab-purchase.test-support";
 
 test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Internal Audit", async () => {
   const url = process.env['SUPABASE_URL'];
@@ -10,6 +11,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
   const admin = createClient(url, key, { auth: { persistSession: false } });
   const users: string[] = [];
   let rabId: string | undefined;
+  let purchasePath: string | undefined;
   try {
     const clients: SupabaseClient[] = [];
     for (const role of ["internal_audit", "purchasing"]) {
@@ -26,8 +28,9 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     assert.ok(audit && buyer);
     const rab = await buyer.from("stock_opname_projects").insert({ project_name: "Uji finalisasi RAB" }).select().single();
     assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
-    const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit_price: 100000 }).select().single();
+    const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit: "unit", unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
+    purchasePath = await approveTestPurchase(buyer, rabId);
     const printAttachment = await buyer.from("rab_print_documents").insert({ rab_id: rabId, file_name: "lampiran.pdf", file_path: `rab-print/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
     assert.equal(printAttachment.error, null); assert.ok(printAttachment.data);
     assert.equal((await audit.from("rab_print_documents").select("id").eq("rab_id", rabId)).data?.length, 1);
@@ -105,7 +108,8 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
       assert.ok((await client.from("stock_opname_projects").update({ revision_number: 99 }).eq("id", rabId)).error);
       const premature = { rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 };
       assert.ok((await client.from("rab_approval_documents").insert(premature)).error);
-      assert.equal((await client.from("stock_opname_items").update({ quantity: 10 + index }).eq("id", row.data.id)).error, null);
+      if (index === 0) assert.equal((await client.from("stock_opname_items").update({ quantity: 10 }).eq("id", row.data.id)).error, null);
+      else assert.ok((await client.from("stock_opname_items").update({ quantity: 11 }).eq("id", row.data.id)).error);
       assert.equal((await client.rpc("finalize_rab_scheduled_disposition", scheduledArgs)).error, null);
     }
     const signed = await buyer.from("rab_approval_documents").insert({ rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
@@ -121,6 +125,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     }
   } finally {
     if (rabId) assert.equal((await admin.from("stock_opname_projects").delete().eq("id", rabId)).error, null);
+    if (purchasePath) await admin.storage.from("stock-opname-documents").remove([purchasePath]);
     for (const userId of users) await admin.auth.admin.deleteUser(userId);
   }
 });
