@@ -20,7 +20,7 @@ test("supplier finalization is atomic, keeps cancelled rows and protects both ro
       const a=crypto.randomUUID(),b=crypto.randomUUID();
       const rab=await client.from("stock_opname_projects").insert({project_name:"Uji harga supplier",suppliers:[{id:a,name:"Supplier A"},{id:b,name:"Supplier B"}]}).select("id").single();
       assert.equal(rab.error,null); rabId=rab.data?.id; assert.ok(rabId);
-      const inserted=await client.from("stock_opname_items").insert([{rab_id:rabId,description:"Aktif",quantity:2,unit:"unit",unit_price:100,supplier_prices:{},is_cancelled:false}, {rab_id:rabId,description:"Batal",quantity:10,unit_price:999,supplier_prices:{},is_cancelled:true}]).select();
+      const inserted=await client.from("stock_opname_items").insert([{rab_id:rabId,description:"Aktif",quantity:2,unit:"unit",unit_price:100,supplier_prices:{},is_cancelled:false}, {rab_id:rabId,description:"Batal",quantity:10,unit:"unit",unit_price:999,supplier_prices:{},is_cancelled:true}]).select();
       assert.equal(inserted.error,null);
       const active=inserted.data?.find((i:{description:string})=>i.description==="Aktif"); assert.ok(active);
       purchasePath=await approveTestPurchase(client,rabId);

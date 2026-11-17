@@ -27,7 +27,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const [audit, buyer] = clients;
     assert.ok(audit && buyer);
     const rab = await buyer.from("stock_opname_projects").insert({ project_name: "Uji finalisasi RAB" }).select().single();
-    assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
+    assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id; assert.ok(rabId);
     const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit: "unit", unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
     purchasePath = await approveTestPurchase(buyer, rabId);
