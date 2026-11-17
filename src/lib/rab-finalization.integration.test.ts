@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient, type PostgrestSingleResponse } from "@supabase/supabase-js";
 import { approveTestPurchase } from "./rab-purchase.test-support";
 
 test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Internal Audit", async () => {
@@ -38,7 +38,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     for (const entry of clients) {
       const client: SupabaseClient = entry;
       assert.equal((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error, null);
-      const savedDraft = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
+      const savedDraft: PostgrestSingleResponse<{ finalization_draft: unknown; finalized_at: string | null }> = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
       assert.equal(savedDraft.error, null);
       assert.deepEqual(savedDraft.data?.finalization_draft, draft);
       assert.equal(savedDraft.data?.finalized_at, null);
@@ -94,15 +94,15 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
       const client: SupabaseClient = entry;
       assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "   " })).error);
       const reason = index === 0 ? "Revisi saat pengajuan tanda tangan" : "Revisi kedua nilai pekerjaan";
-      const reopened = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
+      const reopened: PostgrestSingleResponse<number> = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
       assert.equal(reopened.error, null);
       assert.equal(reopened.data, index + 1);
       assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "Pembukaan ganda" })).error);
-      const state = await client.from("stock_opname_projects").select("finalized_at,revision_number,finalization_draft").eq("id", rabId).single();
+      const state: PostgrestSingleResponse<{ finalized_at: string | null; revision_number: number; finalization_draft: unknown }> = await client.from("stock_opname_projects").select("finalized_at,revision_number,finalization_draft").eq("id", rabId).single();
       assert.equal(state.data?.finalized_at, null);
       assert.equal(state.data?.revision_number, index + 1);
       assert.equal(state.data?.finalization_draft, null);
-      const history = await client.from("rab_revisions").select("reason,revision_number,created_by").eq("rab_id", rabId).eq("revision_number", index + 1).single();
+      const history: PostgrestSingleResponse<{ reason: string; revision_number: number; created_by: string }> = await client.from("rab_revisions").select("reason,revision_number,created_by").eq("rab_id", rabId).eq("revision_number", index + 1).single();
       assert.equal(history.error, null);
       assert.equal(history.data?.reason, reason);
       assert.equal(history.data?.created_by, users[index]);
