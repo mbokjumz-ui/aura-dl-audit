@@ -53,4 +53,4 @@
 - [x] Ubah Cetak SO menjadi berita acara dengan volume, nilai pilihan, diskon proporsional, prestasi kerja, supplier, dan tanda tangan; uji cetakan.
 - [x] Satukan cetak perbandingan harga menjadi tabel RAB/supplier dengan margin kecil, volume/satuan, jumlah, diskon dan grand total; uji cetakan.
 - [x] Pindahkan diskon ke rincian proyek per sumber harga; tarik otomatis ke finalisasi dan cetak perbandingan, serta uji penyimpanan dan kunci.
-- [ ] Tambahkan alur RAB Pembelian untuk RAB baru: susun perkiraan, cetak, unggah persetujuan, kunci perkiraan dan buka harga supplier; uji akses serta cetakan.
+- [x] Tambahkan alur RAB Pembelian untuk RAB baru: susun perkiraan, cetak, unggah persetujuan, kunci perkiraan dan buka harga supplier; uji akses serta cetakan.

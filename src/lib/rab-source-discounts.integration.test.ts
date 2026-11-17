@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { approveTestPurchase } from "./rab-purchase.test-support";
 
 test("both roles save independent discounts and finalization pulls the selected supplier discount, not submitted values", async () => {
   const url = process.env["SUPABASE_URL"], key = process.env["SUPABASE_SERVICE_ROLE_KEY"], pub = process.env["SUPABASE_PUBLISHABLE_KEY"];
@@ -8,6 +9,7 @@ test("both roles save independent discounts and finalization pulls the selected 
   const admin = createClient(url, key, { auth: { persistSession: false } });
   for (const role of ["internal_audit", "purchasing"]) {
     let userId: string | undefined, rabId: string | undefined;
+    let purchasePath: string | undefined;
     try {
       const email = `source-discount-${crypto.randomUUID()}@example.com`, password = crypto.randomUUID() + "aA1";
       const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
@@ -18,7 +20,9 @@ test("both roles save independent discounts and finalization pulls the selected 
       const a = crypto.randomUUID(), b = crypto.randomUUID();
       const rab = await client.from("stock_opname_projects").insert({ project_name: "Uji diskon supplier", suppliers: [{ id: a, name: "A" }, { id: b, name: "B" }] }).select("id").single();
       assert.equal(rab.error, null); rabId = rab.data?.id; assert.ok(rabId);
-      assert.equal((await client.from("stock_opname_items").insert({ rab_id: rabId, description: "Pekerjaan", quantity: 10, unit_price: 100000, supplier_prices: { [a]: 80000, [b]: 90000 } })).error, null);
+      assert.equal((await client.from("stock_opname_items").insert({ rab_id: rabId, description: "Pekerjaan", quantity: 10, unit: "unit", unit_price: 100000 })).error, null);
+      purchasePath = await approveTestPurchase(client, rabId);
+      assert.equal((await client.from("stock_opname_items").update({ supplier_prices: { [a]: 80000, [b]: 90000 } }).eq("rab_id", rabId)).error, null);
       const save = (source: string, type: string, value: number) => client.rpc("save_rab_source_discount", { _rab_id: rabId, _source: source, _discount_type: type, _discount_value: value });
       assert.ok((await save(a, "percent", 101)).error);
       assert.ok((await save(a, "rupiah", 800001)).error);
@@ -39,6 +43,7 @@ test("both roles save independent discounts and finalization pulls the selected 
       assert.equal((await client.from("stock_opname_projects").select("discount_value").eq("id", rabId).single()).data?.discount_value, 0);
     } finally {
       if (rabId) assert.equal((await admin.from("stock_opname_projects").delete().eq("id", rabId)).error, null);
+      if (purchasePath) await admin.storage.from("stock-opname-documents").remove([purchasePath]);
       if (userId) assert.equal((await admin.auth.admin.deleteUser(userId)).error, null);
     }
   }

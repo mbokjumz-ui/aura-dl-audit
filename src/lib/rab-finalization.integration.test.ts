@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient, type PostgrestSingleResponse } from "@supabase/supabase-js";
+import { approveTestPurchase } from "./rab-purchase.test-support";
 
 test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Internal Audit", async () => {
   const url = process.env['SUPABASE_URL'];
@@ -10,6 +11,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
   const admin = createClient(url, key, { auth: { persistSession: false } });
   const users: string[] = [];
   let rabId: string | undefined;
+  let purchasePath: string | undefined;
   try {
     const clients: SupabaseClient[] = [];
     for (const role of ["internal_audit", "purchasing"]) {
@@ -25,16 +27,18 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const [audit, buyer] = clients;
     assert.ok(audit && buyer);
     const rab = await buyer.from("stock_opname_projects").insert({ project_name: "Uji finalisasi RAB" }).select().single();
-    assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id;
-    const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit_price: 100000 }).select().single();
+    assert.equal(rab.error, null); assert.ok(rab.data); rabId = rab.data.id; assert.ok(rabId);
+    const row = await buyer.from("stock_opname_items").insert({ rab_id: rabId, description: "Poin final", quantity: 10, unit: "unit", unit_price: 100000 }).select().single();
     assert.equal(row.error, null); assert.ok(row.data);
+    purchasePath = await approveTestPurchase(buyer, rabId);
     const printAttachment = await buyer.from("rab_print_documents").insert({ rab_id: rabId, file_name: "lampiran.pdf", file_path: `rab-print/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
     assert.equal(printAttachment.error, null); assert.ok(printAttachment.data);
     assert.equal((await audit.from("rab_print_documents").select("id").eq("rab_id", rabId)).data?.length, 1);
     const draft = { vatIncluded: true, note: "Draft belum lengkap", contractors: [{ name: "Kontraktor", amount: "" }], approvers: [{ name: "", position: "" }], acknowledgers: [{ name: "", position: "" }], workDays: "", workStartDate: "", downPayment: "30", responsiblePosition: "" };
-    for (const client of clients) {
+    for (const entry of clients) {
+      const client: SupabaseClient = entry;
       assert.equal((await client.rpc("save_rab_finalization_draft", { _rab_id: rabId, _draft: draft })).error, null);
-      const savedDraft = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
+      const savedDraft: PostgrestSingleResponse<{ finalization_draft: unknown; finalized_at: string | null }> = await client.from("stock_opname_projects").select("finalization_draft,finalized_at").eq("id", rabId).single();
       assert.equal(savedDraft.error, null);
       assert.deepEqual(savedDraft.data?.finalization_draft, draft);
       assert.equal(savedDraft.data?.finalized_at, null);
@@ -86,18 +90,19 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     const read = await buyer.from("stock_opname_projects").select("finalized_at,vat_included,stock_opname_items(quantity,actual_quantity)").eq("id", rabId).single();
     assert.ok(read.data?.finalized_at); assert.equal(read.data?.vat_included, true);
     assert.equal(read.data?.stock_opname_items[0]?.quantity, 10); assert.equal(read.data?.stock_opname_items[0]?.actual_quantity, 9);
-    for (const [index, client] of clients.entries()) {
+    for (const [index, entry] of clients.entries()) {
+      const client: SupabaseClient = entry;
       assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "   " })).error);
       const reason = index === 0 ? "Revisi saat pengajuan tanda tangan" : "Revisi kedua nilai pekerjaan";
-      const reopened = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
+      const reopened: PostgrestSingleResponse<number> = await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: reason });
       assert.equal(reopened.error, null);
       assert.equal(reopened.data, index + 1);
       assert.ok((await client.rpc("reopen_rab_revision", { _rab_id: rabId, _reason: "Pembukaan ganda" })).error);
-      const state = await client.from("stock_opname_projects").select("finalized_at,revision_number,finalization_draft").eq("id", rabId).single();
+      const state: PostgrestSingleResponse<{ finalized_at: string | null; revision_number: number; finalization_draft: unknown }> = await client.from("stock_opname_projects").select("finalized_at,revision_number,finalization_draft").eq("id", rabId).single();
       assert.equal(state.data?.finalized_at, null);
       assert.equal(state.data?.revision_number, index + 1);
       assert.equal(state.data?.finalization_draft, null);
-      const history = await client.from("rab_revisions").select("reason,revision_number,created_by").eq("rab_id", rabId).eq("revision_number", index + 1).single();
+      const history: PostgrestSingleResponse<{ reason: string; revision_number: number; created_by: string }> = await client.from("rab_revisions").select("reason,revision_number,created_by").eq("rab_id", rabId).eq("revision_number", index + 1).single();
       assert.equal(history.error, null);
       assert.equal(history.data?.reason, reason);
       assert.equal(history.data?.created_by, users[index]);
@@ -105,7 +110,8 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
       assert.ok((await client.from("stock_opname_projects").update({ revision_number: 99 }).eq("id", rabId)).error);
       const premature = { rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 };
       assert.ok((await client.from("rab_approval_documents").insert(premature)).error);
-      assert.equal((await client.from("stock_opname_items").update({ quantity: 10 + index }).eq("id", row.data.id)).error, null);
+      if (index === 0) assert.equal((await client.from("stock_opname_items").update({ quantity: 10 }).eq("id", row.data.id)).error, null);
+      else assert.ok((await client.from("stock_opname_items").update({ quantity: 11 }).eq("id", row.data.id)).error);
       assert.equal((await client.rpc("finalize_rab_scheduled_disposition", scheduledArgs)).error, null);
     }
     const signed = await buyer.from("rab_approval_documents").insert({ rab_id: rabId, file_name: "signed.pdf", file_path: `rab-approved/${rabId}/${crypto.randomUUID()}.pdf`, content_type: "application/pdf", file_size: 100 }).select().single();
@@ -121,6 +127,7 @@ test("RAB final terkunci untuk kedua peran, tetapi opname tetap dapat diisi Inte
     }
   } finally {
     if (rabId) assert.equal((await admin.from("stock_opname_projects").delete().eq("id", rabId)).error, null);
+    if (purchasePath) await admin.storage.from("stock-opname-documents").remove([purchasePath]);
     for (const userId of users) await admin.auth.admin.deleteUser(userId);
   }
 });
